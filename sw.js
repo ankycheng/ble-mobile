@@ -1,22 +1,39 @@
-// Change this to your repository name
-var GHPATH = '/ble-mobile';
- 
-// Choose a different app prefix name
-var APP_PREFIX = 'ble_mobile_';
- 
-// The version of the cache. Every time you change any of the files
-// you need to change this version (version_01, version_02…). 
-// If you don't change the version, the service worker will give your
-// users the old files!
-var VERSION = 'version_00';
- 
-var URLS = [    
-  `${GHPATH}/`,
-  `${GHPATH}/index.html`,
-  `${GHPATH}/ble-mobile/static/manifest.json`,
-  `${GHPATH}/offline.html`,
-  `${GHPATH}/p5.js`,
-  `${GHPATH}/p5.ble.js`,
-  `${GHPATH}/sketch2.js`,
-  `${GHPATH}/style.css`,
-]
+self.addEventListener('install', function(e) {
+    console.log('[Service Worker] Install');
+});
+
+var cacheName = 'v1';
+var appShellFiles = [
+    './',
+    './index.html',
+    './style.css',
+    './sketch2.js',
+    './p5.js',
+    './p5.ble.js',
+    './offline.html',
+];
+
+self.addEventListener('install', function(e) {
+    console.log('[Service Worker] Install');
+    e.waitUntil(
+        caches.open(cacheName).then(function(cache) {
+            console.log('[Service Worker] Caching all: app shell and content');
+            return cache.addAll(appShellFiles);
+        })
+    );
+});
+
+self.addEventListener('fetch', function(e) {
+    e.respondWith(
+        caches.match(e.request).then(function(r) {
+            console.log('[Service Worker] Fetching resource: '+e.request.url);
+            return r || fetch(e.request).then(function(response) {
+                return caches.open(cacheName).then(function(cache) {
+                    console.log('[Service Worker] Caching new resource: '+e.request.url);
+                    cache.put(e.request, response.clone());
+                    return response;
+                });
+            });
+        })
+    );
+});
