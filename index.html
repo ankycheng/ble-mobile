@@ -19,7 +19,15 @@
   </main>
   <script src="sketch2.js"></script>
   <a href=" https://735d-74-73-51-159.ngrok-free.app/web/index_ble.html">Link</a>
+
+  <script>
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.register(
+        '/ble-mobile/sw.js',
+        { scope: '/ble-mobile/' }
+      )
+    }
+  </script>
 </body>
 
 </html>
-
