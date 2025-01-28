@@ -13,7 +13,7 @@ var VERSION = 'version_00';
 var URLS = [    
   `${GHPATH}/`,
   `${GHPATH}/index.html`,
-  `${GHPATH}/static/manifest.json`,
+  `${GHPATH}/ble-mobile/static/manifest.json`,
   `${GHPATH}/offline.html`,
   `${GHPATH}/p5.js`,
   `${GHPATH}/p5.ble.js`,
