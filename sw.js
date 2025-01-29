@@ -7,7 +7,7 @@ var appShellFiles = [
     './',
     './index.html',
     './style.css',
-    './sketch2.js',
+    './sketch.js',
     './p5.js',
     './p5.ble.js',
     './offline.html',
