@@ -6,3 +6,24 @@ body {
 canvas {
   display: block;
 }
+#location-info {
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+#location-info p {
+  margin: 5px 0;
+  font-size: 14px;
+}
+
+#current-position {
+  font-weight: bold;
+  color: #333;
+}
+
+#tower-distance {
+  color: #4caf50;
+  font-weight: bold;
+}

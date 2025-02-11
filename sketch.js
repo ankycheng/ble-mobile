@@ -23,15 +23,15 @@ let watchId = null; // Add GPS watch ID
 
 function preload() {
   // Load the JSON file and assign it directly to cellTowers
-  loadJSON('./newyork.json', function(data) {
+  loadJSON("./newyork.json", function (data) {
     cellTowers = data.towers;
-    console.log(cellTowers)
+    console.log("Loaded", cellTowers.length, "cell towers");
   });
 }
 
 function setup() {
   createCanvas(400, 400);
-  console.log('Loaded', cellTowers.length, 'cell towers');
+
   myBLE = new p5ble();
 
   // Start GPS tracking
@@ -51,7 +51,9 @@ function setup() {
 
   // Add Find Closest Tower button
   const findTowerButton = createButton("Find Closest Tower");
-  findTowerButton.mousePressed(findClosestTowerNow);
+  findTowerButton.mousePressed(() => {
+    findClosestTower(currentLat, currentLon);
+  });
   findTowerButton.style("margin-left", "30px");
   findTowerButton.style("width", "150px");
   findTowerButton.style("height", "50px");
@@ -60,12 +62,26 @@ function setup() {
   findTowerButton.style("border", "none");
   findTowerButton.style("border-radius", "4px");
 
+  // Request device orientation permission (required for iOS 13+)
+  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+    // iOS 13+ devices
+    const orientationButton = createButton('Enable Compass');
+    orientationButton.mousePressed(() => {
+      DeviceOrientationEvent.requestPermission()
+        .then(response => {
+          if (response === 'granted') {
+            window.addEventListener('deviceorientation', handleOrientation);
+          }
+        })
+        .catch(console.error);
+    });
+  } else {
+    // Non iOS 13+ devices
+    window.addEventListener('deviceorientation', handleOrientation);
+  }
+
   // initLogTracker();
 }
-
-// function draw() {
-//   background(255); // set background to white
-// }
 
 function initLogTracker() {
   // Log to console
@@ -140,21 +156,23 @@ function calibrate() {
 // Add function to calculate distance between two points
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371e3; // Earth's radius in meters
-  const φ1 = lat1 * Math.PI/180;
-  const φ2 = lat2 * Math.PI/180;
-  const Δφ = (lat2-lat1) * Math.PI/180;
-  const Δλ = (lon2-lon1) * Math.PI/180;
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
 
-  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-          Math.cos(φ1) * Math.cos(φ2) *
-          Math.sin(Δλ/2) * Math.sin(Δλ/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
   return R * c; // returns distance in meters
 }
 
 // Add function to find closest tower
 function findClosestTower(latitude, longitude) {
+  console.log("Finding closest tower");
+  console.log(latitude, longitude);
   if (!cellTowers || !cellTowers.length) return null;
 
   let closestDistance = Infinity;
@@ -176,7 +194,7 @@ function findClosestTower(latitude, longitude) {
 
   return {
     tower: closest,
-    distance: closestDistance
+    distance: closestDistance,
   };
 }
 
@@ -186,15 +204,15 @@ function startGPSTracking() {
     const options = {
       enableHighAccuracy: true,
       timeout: 5000,
-      maximumAge: 0
+      maximumAge: 0,
     };
-    
+
     watchId = navigator.geolocation.watchPosition(
       updatePosition,
       handleGPSError,
       options
     );
-    
+
     // Get initial position
     navigator.geolocation.getCurrentPosition(
       updatePosition,
@@ -209,20 +227,20 @@ function startGPSTracking() {
 function updatePosition(position) {
   currentLat = position.coords.latitude;
   currentLon = position.coords.longitude;
-  
+
   // Find and update closest tower when position changes
   const closest = findClosestTower(currentLat, currentLon);
   if (closest) {
     closestTower = closest;
-    console.log('GPS Update - Current Position:', currentLat, currentLon);
-    console.log('Closest tower:', closest.tower);
-    console.log('Distance:', (closest.distance).toFixed(2), 'meters');
+    console.log("GPS Update - Current Position:", currentLat, currentLon);
+    console.log("Closest tower:", closest.tower);
+    console.log("Distance:", closest.distance.toFixed(2), "meters");
     updateLocationDisplay();
   }
 }
 
 function handleGPSError(error) {
-  switch(error.code) {
+  switch (error.code) {
     case error.PERMISSION_DENIED:
       console.log("User denied the request for Geolocation.");
       break;
@@ -242,29 +260,39 @@ function handleGPSError(error) {
 function draw() {
   background(255);
   updateLocationDisplay();
+  
+  // Draw compass
+  drawCompass(width/2, height/2, 150); // Draw compass in center with radius 150
 }
 
 // Add this new function to update the HTML elements
 function updateLocationDisplay() {
   // Update current position
-  document.getElementById('current-position').textContent = 
-    `Current Position: ${currentLat.toFixed(6)}, ${currentLon.toFixed(6)}`;
-  
+  document.getElementById(
+    "current-position"
+  ).textContent = `Current Position: ${currentLat.toFixed(
+    6
+  )}, ${currentLon.toFixed(6)}`;
+
   // Update tower info if available
   if (closestTower) {
-    document.getElementById('tower-radio').textContent = 
-      `Tower Radio Type: ${closestTower.tower.radio}`;
-    document.getElementById('tower-cell').textContent = 
-      `Cell ID: ${closestTower.tower.cell}`;
-    document.getElementById('tower-location').textContent = 
-      `Tower Location: ${closestTower.tower.lat}, ${closestTower.tower.lon}`;
-    document.getElementById('tower-distance').textContent = 
-      `Distance: ${closestTower.distance.toFixed(2)} meters`;
+    document.getElementById(
+      "tower-radio"
+    ).textContent = `Tower Radio Type: ${closestTower.tower.radio}`;
+    document.getElementById(
+      "tower-cell"
+    ).textContent = `Cell ID: ${closestTower.tower.cell}`;
+    document.getElementById(
+      "tower-location"
+    ).textContent = `Tower Location: ${closestTower.tower.lat}, ${closestTower.tower.lon}`;
+    document.getElementById(
+      "tower-distance"
+    ).textContent = `Distance: ${closestTower.distance.toFixed(2)} meters`;
   }
 }
 
 // Clean up GPS watch when page is closed
-window.onbeforeunload = function() {
+window.onbeforeunload = function () {
   if (watchId !== null) {
     navigator.geolocation.clearWatch(watchId);
   }
@@ -274,36 +302,84 @@ window.onbeforeunload = function() {
 function onCharacteristicValueChanged(event) {
   const value = new Float32Array(event.target.value.buffer);
   console.log("BLE value: ", value);
-  
+
   // Update orientation from BLE
   if (value.length >= 3) {
     [heading, pitch, roll] = value;
   }
-  
-  // Note: We're now using GPS for position instead of BLE
-  // The closest tower calculation is handled in updatePosition()
 }
 
-// Add function to handle button click
-function findClosestTowerNow() {
-  if (currentLat === 0 && currentLon === 0) {
-    console.log("Waiting for GPS position...");
-    return;
-  }
+// Add this new function to draw the compass
+function drawCompass(x, y, radius) {
+  push(); // Save current drawing state
+  translate(x, y); // Move to center of compass
+  
+  // Draw outer circle
+  noFill();
+  stroke(0);
+  strokeWeight(2);
+  circle(0, 0, radius * 2);
+  
+  // Draw cardinal directions
+  textSize(16);
+  textAlign(CENTER, CENTER);
+  fill(0);
+  noStroke();
+  text('N', 0, -radius - 20);
+  text('S', 0, radius + 20);
+  text('E', radius + 20, 0);
+  text('W', -radius - 20, 0);
+  
+  // Draw compass needle
+  push();
+  rotate(radians(heading)); // Use heading from BLE
+  
+  // Draw arrow
+  strokeWeight(3);
+  stroke(255, 0, 0); // Red for North
+  line(0, 0, 0, -radius * 0.8);
+  fill(255, 0, 0);
+  triangle(
+    -10, -radius * 0.7,
+    10, -radius * 0.7,
+    0, -radius * 0.9
+  );
+  
+  // South pointer
+  stroke(0, 0, 255); // Blue for South
+  line(0, 0, 0, radius * 0.8);
+  fill(0, 0, 255);
+  triangle(
+    -10, radius * 0.7,
+    10, radius * 0.7,
+    0, radius * 0.9
+  );
+  
+  pop();
+  
+  // Draw center dot
+  fill(0);
+  noStroke();
+  circle(0, 0, 5);
+  
+  pop(); // Restore original drawing state
+}
 
-  const closest = findClosestTower(currentLat, currentLon);
-  if (closest) {
-    closestTower = closest;
-    console.log('=== Current Location ===');
-    console.log(`Latitude: ${currentLat.toFixed(6)}`);
-    console.log(`Longitude: ${currentLon.toFixed(6)}`);
-    console.log('=== Closest Tower Info ===');
-    console.log('Radio Type:', closest.tower.radio);
-    console.log('Cell ID:', closest.tower.cell);
-    console.log('Tower Location:', closest.tower.lat, closest.tower.lon);
-    console.log('Range:', closest.tower.range, 'meters');
-    console.log('Distance:', (closest.distance).toFixed(2), 'meters');
-  } else {
-    console.log("No tower data available");
+// Add handler for device orientation
+function handleOrientation(event) {
+  // alpha is the compass direction (in degrees)
+  if (event.alpha !== null) {
+    heading = event.alpha;
+    // Adjust for different device orientations
+    if (window.orientation === 90) {
+      heading += 90;
+    } else if (window.orientation === -90) {
+      heading -= 90;
+    } else if (window.orientation === 180) {
+      heading += 180;
+    }
+    
+    // Keep heading between 0 and 360
+    heading = (heading + 360) % 360;
   }
 }
