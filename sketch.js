@@ -4,9 +4,11 @@ let myBLE;
 const serviceUUID = "19B10010-E8F2-537E-4F6C-D104768A1214";
 const characteristicUUID = "19b10011-e8f2-537e-4f6c-d104768a1214";
 const clibrationCharacteristicUUID = "49c29251-5fe3-4832-83dd-e736b673b0bf";
+const distanceCharacteristicUUID = "49c29252-5fe3-4832-83dd-e736b673b0bf";
 
 let myCharacteristic;
 let clibrationCharacteristic;
+let distanceCharacteristic;
 let isConnected = false;
 
 // Add variables for orientation data
@@ -20,6 +22,9 @@ let currentLat = 0;
 let currentLon = 0;
 let closestTower = null;
 let watchId = null; // Add GPS watch ID
+let calibrateButton = null;
+
+let canCalibrate = false;
 
 function preload() {
   // Load the JSON file and assign it directly to cellTowers
@@ -43,12 +48,12 @@ function setup() {
   connectButton.style("width", "150px");
   connectButton.style("height", "50px");
 
-  const calibrateButton = createButton("Calibrate");
+  calibrateButton = createButton("Calibrate");
   calibrateButton.mousePressed(calibrate);
   calibrateButton.style("margin-left", "30px");
   calibrateButton.style("width", "100px");
   calibrateButton.style("height", "50px");
-
+  calibrateButton.attribute("disabled", canCalibrate ? null : "disabled");
   // Add Find Closest Tower button
   const findTowerButton = createButton("Find Closest Tower");
   findTowerButton.mousePressed(() => {
@@ -63,38 +68,22 @@ function setup() {
   findTowerButton.style("border-radius", "4px");
 
   // Request device orientation permission (required for iOS 13+)
-  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+  if (typeof DeviceOrientationEvent.requestPermission === "function") {
     // iOS 13+ devices
-    const orientationButton = createButton('Enable Compass');
+    const orientationButton = createButton("Enable Compass");
     orientationButton.mousePressed(() => {
       DeviceOrientationEvent.requestPermission()
-        .then(response => {
-          if (response === 'granted') {
-            window.addEventListener('deviceorientation', handleOrientation);
+        .then((response) => {
+          if (response === "granted") {
+            window.addEventListener("deviceorientation", handleOrientation, true);
           }
         })
         .catch(console.error);
     });
   } else {
     // Non iOS 13+ devices
-    window.addEventListener('deviceorientation', handleOrientation);
+    window.addEventListener("deviceorientationabsolute", handleOrientation, true);
   }
-
-  // initLogTracker();
-}
-
-function initLogTracker() {
-  // Log to console
-  var old = console.log;
-  var logger = document.getElementById("log");
-  console.log = function (message) {
-    if (typeof message == "object") {
-      logger.innerHTML +=
-        (JSON && JSON.stringify ? JSON.stringify(message) : message) + "<br />";
-    } else {
-      logger.innerHTML += message + "<br />";
-    }
-  };
 }
 
 function connectToBLE() {
@@ -117,6 +106,10 @@ function gotCharacteristics(error, characteristics) {
   myCharacteristic = characteristics.find((c) => c.uuid === characteristicUUID);
   clibrationCharacteristic = characteristics.find(
     (c) => c.uuid === clibrationCharacteristicUUID
+  );
+
+  distanceCharacteristic = characteristics.find(
+    (c) => c.uuid === distanceCharacteristicUUID
   );
 
   isConnected = true;
@@ -145,28 +138,12 @@ function gotValue(error, value) {
 }
 
 function writeToBle() {
-  const inputValue = input.value();
+  const inputValue = "gg";
   myBLE.write(clibrationCharacteristic, inputValue);
 }
 
 function calibrate() {
   myBLE.write(clibrationCharacteristic, "1");
-}
-
-// Add function to calculate distance between two points
-function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371e3; // Earth's radius in meters
-  const φ1 = (lat1 * Math.PI) / 180;
-  const φ2 = (lat2 * Math.PI) / 180;
-  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
-
-  const a =
-    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return R * c; // returns distance in meters
 }
 
 // Add function to find closest tower
@@ -232,9 +209,14 @@ function updatePosition(position) {
   const closest = findClosestTower(currentLat, currentLon);
   if (closest) {
     closestTower = closest;
+    const distance = closest.distance.toFixed(2);
     console.log("GPS Update - Current Position:", currentLat, currentLon);
     console.log("Closest tower:", closest.tower);
-    console.log("Distance:", closest.distance.toFixed(2), "meters");
+    console.log("Distance:", distance, "meters");
+    if (distance < 100) {
+      myBLE.write(distanceCharacteristic, "1");
+    }
+
     updateLocationDisplay();
   }
 }
@@ -260,9 +242,9 @@ function handleGPSError(error) {
 function draw() {
   background(255);
   updateLocationDisplay();
-  
+
   // Draw compass
-  drawCompass(width/2, height/2, 150); // Draw compass in center with radius 150
+  drawCompass(width / 2, height / 2, 150); // Draw compass in center with radius 150
 }
 
 // Add this new function to update the HTML elements
@@ -302,72 +284,76 @@ window.onbeforeunload = function () {
 function onCharacteristicValueChanged(event) {
   const value = new Float32Array(event.target.value.buffer);
   console.log("BLE value: ", value);
-
-  // Update orientation from BLE
-  if (value.length >= 3) {
-    [heading, pitch, roll] = value;
-  }
 }
 
 // Add this new function to draw the compass
 function drawCompass(x, y, radius) {
   push(); // Save current drawing state
   translate(x, y); // Move to center of compass
-  
+
   // Draw outer circle
   noFill();
   stroke(0);
   strokeWeight(2);
   circle(0, 0, radius * 2);
-  
+
   // Draw cardinal directions
   textSize(16);
   textAlign(CENTER, CENTER);
   fill(0);
   noStroke();
-  text('N', 0, -radius - 20);
-  text('S', 0, radius + 20);
-  text('E', radius + 20, 0);
-  text('W', -radius - 20, 0);
-  
-  // Draw compass needle
-  push();
-  rotate(radians(heading)); // Use heading from BLE
-  
-  // Draw arrow
-  strokeWeight(3);
-  stroke(255, 0, 0); // Red for North
-  line(0, 0, 0, -radius * 0.8);
-  fill(255, 0, 0);
-  triangle(
-    -10, -radius * 0.7,
-    10, -radius * 0.7,
-    0, -radius * 0.9
-  );
-  
-  // South pointer
-  stroke(0, 0, 255); // Blue for South
-  line(0, 0, 0, radius * 0.8);
-  fill(0, 0, 255);
-  triangle(
-    -10, radius * 0.7,
-    10, radius * 0.7,
-    0, radius * 0.9
-  );
-  
-  pop();
-  
-  // Draw center dot
-  fill(0);
-  noStroke();
-  circle(0, 0, 5);
-  
+  text("N", 0, -radius - 20);
+  text("S", 0, radius + 20);
+  text("E", radius + 20, 0);
+  text("W", -radius - 20, 0);
+
+  if (closestTower) {
+    // get angle to closest tower from current position
+    const angle = atan2(
+      closestTower.tower.lat - currentLat,
+      closestTower.tower.lon - currentLon
+    );
+    const towerHeading = (angle * 180) / Math.PI;
+
+    // Draw compass needle
+    push();
+    // keep heading to the tower
+    const headingToTower = heading + towerHeading;
+    rotate(radians(headingToTower));
+
+    canCalibrate = abs(headingToTower) < 5 || abs(headingToTower) > 355;
+    canCalibrate
+      ? calibrateButton.removeAttribute("disabled")
+      : calibrateButton.attribute("disabled", "disabled");
+
+    // Draw arrow
+    strokeWeight(3);
+    stroke(255, 0, 0); // Red for North
+    line(0, 0, 0, -radius * 0.8);
+    fill(255, 0, 0);
+    triangle(-10, -radius * 0.7, 10, -radius * 0.7, 0, -radius * 0.9);
+
+    pop();
+
+    // Draw center dot
+    fill(0);
+    noStroke();
+    circle(0, 0, 5);
+  }
+
   pop(); // Restore original drawing state
 }
 
 // Add handler for device orientation
 function handleOrientation(event) {
   // alpha is the compass direction (in degrees)
+
+  if (event.webkitCompassHeading) {
+    heading = event.webkitCompassHeading;
+  } else {
+    heading = event.alpha;
+  }
+
   if (event.alpha !== null) {
     heading = event.alpha;
     // Adjust for different device orientations
@@ -378,7 +364,7 @@ function handleOrientation(event) {
     } else if (window.orientation === 180) {
       heading += 180;
     }
-    
+
     // Keep heading between 0 and 360
     heading = (heading + 360) % 360;
   }
