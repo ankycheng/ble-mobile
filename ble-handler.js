@@ -104,7 +104,8 @@ function gotCharacteristics(error, characteristics) {
 
 function calibrateBLE() {
   if (BLEState.calibrationCharacteristic) {
-    BLEState.myBLE.write(BLEState.calibrationCharacteristic, "1");
+    // BLEState.myBLE.write(BLEState.calibrationCharacteristic, "1");
+    BLEState.myBLE.write(BLEState.calibrationCharacteristic, CompassState.heading);
   }
 }
 

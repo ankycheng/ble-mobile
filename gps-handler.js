@@ -5,7 +5,9 @@ const GPSState = {
   watchId: null,
   cellTowers: null,
   closestTower: null,
-  isTracking: false
+  randomTower: null,
+  isTracking: false,
+  isRandom: true
 };
 
 // GPS Configuration
@@ -19,7 +21,8 @@ const GPSConfig = {
 
 // Load cell tower data
 function loadCellTowerData(callback) {
-  fetch("./newyork.json")
+  // fetch("./newyork.json")
+  fetch("./test_data.json")
     .then(response => response.json())
     .then(data => {
       GPSState.cellTowers = data.towers;
@@ -68,14 +71,17 @@ function updatePosition(position) {
   GPSState.currentLat = position.coords.latitude;
   GPSState.currentLon = position.coords.longitude;
 
-  const closest = findClosestTower(GPSState.currentLat, GPSState.currentLon);
+  if(!GPSState.randomTower){
+    GPSState.randomTower = findOneRandomTower();
+  }
+
+  const closest = GPSState.isRandom ? 
+  GPSState.randomTower : 
+  findClosestTower(GPSState.currentLat, GPSState.currentLon);
+
   if (closest) {
     GPSState.closestTower = closest;
     const distance = closest.distance.toFixed(2);
-    
-    console.log("GPS Update - Current Position:", GPSState.currentLat, GPSState.currentLon);
-    console.log("Closest tower:", closest.tower);
-    console.log("Distance:", distance, "meters");
 
     // Update UI with new position and tower info
     if (window.onLocationUpdate) {
@@ -120,6 +126,18 @@ function findClosestTower(latitude, longitude) {
   } : null;
 }
 
+// Find a random tower
+function findOneRandomTower() {
+  const randomTower = GPSState.cellTowers[Math.floor(Math.random() * GPSState.cellTowers.length)];
+  const distance = calculateDistance(
+    GPSState.currentLat,
+    GPSState.currentLon,
+    randomTower.lat,
+    randomTower.lon
+  );
+  return {tower: randomTower, distance: distance};
+}
+
 // Handle GPS errors
 function handleGPSError(error) {
   const errorMessages = {
@@ -138,9 +156,3 @@ function handleGPSError(error) {
 
 // Export state for other modules
 window.GPSState = GPSState;
-// window.findClosestTower = findClosestTower;
-// window.startGPSTracking = startGPSTracking;
-// window.stopGPSTracking = stopGPSTracking;
-// window.updatePosition = updatePosition;
-// window.handleGPSError = handleGPSError;
-// window.calculateDistance = calculateDistance;

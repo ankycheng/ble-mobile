@@ -130,9 +130,7 @@ function setupEventListeners() {
 
   // Calibration state change
   window.onCalibrationStateChange = (canCalibrate) => {
-    console.log("Calibration state change:", canCalibrate);
-    console.log("UIState.buttons.calibrate:", UIState.buttons.calibrate);
-    canCalibrate ? UIState.buttons.calibrate.removeAttribute("disabled") : UIState.buttons.calibrate.setAttribute("disabled", "disabled");
+    canCalibrate ? UIState.buttons.calibrate.removeAttribute("disabled") : UIState.buttons.calibrate.elt.setAttribute("disabled", "disabled");
   };
   
   // Error handling

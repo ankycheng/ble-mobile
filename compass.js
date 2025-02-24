@@ -4,7 +4,7 @@ const CompassState = {
   pitch: 0,
   roll: 0,
   isEnabled: false,
-  canCalibrate: false
+  canCalibrate: false,
 };
 
 // Initialize compass functionality
@@ -13,13 +13,13 @@ function initializeCompass() {
     // iOS 13+ devices require permission
     return {
       needsPermission: true,
-      requestPermission: requestIOSPermission
+      requestPermission: requestIOSPermission,
     };
   } else {
     // Non iOS 13+ devices
     enableCompass();
     return {
-      needsPermission: false
+      needsPermission: false,
     };
   }
 }
@@ -27,7 +27,7 @@ function initializeCompass() {
 // Request iOS permission
 function requestIOSPermission() {
   DeviceOrientationEvent.requestPermission()
-    .then(response => {
+    .then((response) => {
       if (response === "granted") {
         enableCompass();
       } else {
@@ -37,7 +37,7 @@ function requestIOSPermission() {
         }
       }
     })
-    .catch(error => {
+    .catch((error) => {
       console.error("Error requesting device orientation permission:", error);
       if (window.onCompassError) {
         window.onCompassError("Error requesting orientation permission");
@@ -48,7 +48,11 @@ function requestIOSPermission() {
 // Enable compass event listening
 function enableCompass() {
   if ("DeviceOrientationAbsoluteEvent" in window) {
-    window.addEventListener("deviceorientationabsolute", handleOrientation, true);
+    window.addEventListener(
+      "deviceorientationabsolute",
+      handleOrientation,
+      true
+    );
   } else {
     window.addEventListener("deviceorientation", handleOrientation, true);
   }
@@ -57,7 +61,11 @@ function enableCompass() {
 
 // Disable compass
 function disableCompass() {
-  window.removeEventListener("deviceorientationabsolute", handleOrientation, true);
+  window.removeEventListener(
+    "deviceorientationabsolute",
+    handleOrientation,
+    true
+  );
   window.removeEventListener("deviceorientation", handleOrientation, true);
   CompassState.isEnabled = false;
 }
@@ -70,7 +78,8 @@ function handleOrientation(event) {
   }
   // Android devices
   else if (event.alpha !== null) {
-    CompassState.heading = 360 - event.alpha;
+    // CompassState.heading = 360 - event.alpha;
+    CompassState.heading = event.alpha;
     // Adjust for different device orientations
     const orientation = screen.orientation.type;
     if (orientation === "landscape-primary") {
@@ -90,10 +99,15 @@ function handleOrientation(event) {
 
   // Update calibration state if we have GPS data
   if (window.GPSState && window.GPSState.closestTower) {
-    const angle = calculateAngleToTower();
+    const angle = calculateAngleToTower(
+      window.GPSState.currentLat,
+      window.GPSState.currentLon,
+      window.GPSState.closestTower.tower.lat,
+      window.GPSState.closestTower.tower.lon,
+    );
     const headingToTower = CompassState.heading + angle;
-    CompassState.canCalibrate = Math.abs(headingToTower) < 5 || Math.abs(headingToTower) > 355;
-    
+    // CompassState.canCalibrate = Math.abs(headingToTower) < 5 || Math.abs(headingToTower) > 355;
+    CompassState.canCalibrate = true;
     // Notify UI of calibration state change
     if (window.onCalibrationStateChange) {
       window.onCalibrationStateChange(CompassState.canCalibrate);
@@ -106,85 +120,98 @@ function handleOrientation(event) {
       heading: CompassState.heading,
       pitch: CompassState.pitch,
       roll: CompassState.roll,
-      canCalibrate: CompassState.canCalibrate
+      canCalibrate: CompassState.canCalibrate,
     });
   }
 }
 
-// Calculate angle to closest tower
-function calculateAngleToTower() {
-  if (!window.GPSState || !window.GPSState.closestTower) return 0;
-  
-  const tower = window.GPSState.closestTower.tower;
-  const angle = Math.atan2(
-    tower.lat - window.GPSState.currentLat,
-    tower.lon - window.GPSState.currentLon
-  );
-  return (angle * 180) / Math.PI;
+function calculateAngleToTower(lat1, lon1, lat2, lon2) {
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x =
+    Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+  let θ = Math.atan2(y, x);
+  // Convert from radians to degrees and normalize to 0-360°
+  return ((θ * 180) / Math.PI + 360) % 360;
 }
 
 // Draw compass on canvas
 function drawCompass(x, y, radius) {
   // Save current drawing state
   push();
-  
+
   // Move to compass center
   translate(x, y);
-  
+
   // Draw outer circle
   noFill();
   stroke(0);
   strokeWeight(2);
   circle(0, 0, radius * 2);
-  
+
   // Draw cardinal points
   textAlign(CENTER, CENTER);
   textSize(16);
   fill(0);
   noStroke();
-  
+
   const cardinalPoints = ["N", "E", "S", "W"];
   const positions = [
     [0, -radius + 20],
     [radius - 20, 0],
     [0, radius - 20],
-    [-radius + 20, 0]
+    [-radius + 20, 0],
   ];
-  
-  cardinalPoints.forEach((point, i) => {
-    text(point, positions[i][0], positions[i][1]);
-  });
 
   // Draw tower direction if available
   if (window.GPSState && window.GPSState.closestTower) {
-    const angle = calculateAngleToTower();
+    // draw line to north
+    const angle = 0;
     push();
     rotate(radians(CompassState.heading + angle));
-    
+
+    cardinalPoints.forEach((point, i) => {
+      text(point, positions[i][0], positions[i][1]);
+    });
+
     // Draw arrow
     stroke(255, 0, 0);
     strokeWeight(3);
     line(0, 0, 0, -radius + 40);
-    
+
     // Draw arrow head
     noStroke();
     fill(255, 0, 0);
-    triangle(
-      -10, -radius + 50,
-      10, -radius + 50,
-      0, -radius + 30
-    );
+    triangle(-10, -radius + 50, 10, -radius + 50, 0, -radius + 30);
     pop();
+
+    // draw line to tower
+    const angleToTower = calculateAngleToTower(
+      window.GPSState.currentLat,
+      window.GPSState.currentLon,
+      window.GPSState.closestTower.tower.lat,
+      window.GPSState.closestTower.tower.lon,
+    );
+    console.log("angleToTower:", angleToTower);
+    push();
+    rotate(radians(CompassState.heading + angleToTower));
+    stroke(0, 255, 0);
+    strokeWeight(2);
+    line(0, 0, 0, -radius + 40);
+    pop();
+
+    // Draw center dot
+    fill(0);
+    noStroke();
+    circle(0, 0, 5);
   }
-  
-  // Draw center dot
-  fill(0);
-  noStroke();
-  circle(0, 0, 5);
-  
+
   // Restore drawing state
   pop();
 }
 
 // Export state for other modules
-window.CompassState = CompassState; 
+window.CompassState = CompassState;

@@ -1,0 +1,126 @@
+{
+  "towers": [
+    {
+      "radio": "EmpireState",
+      "mcc": 310,
+      "net": 485,
+      "area": 21234,
+      "cell": 22445566,
+      "unit": 1,
+      "lon": -73.9857,
+      "lat": 40.7484,
+      "range": 3500,
+      "samples": 45,
+      "changeable": 1,
+      "created": 1458598912,
+      "updated": 1733693797,
+      "averageSignal": 0
+    },
+    {
+      "radio": "CentralPark",
+      "mcc": 310,
+      "net": 486,
+      "area": 21235,
+      "cell": 22445567,
+      "unit": 2,
+      "lon": -73.9665,
+      "lat": 40.7829,
+      "range": 3600,
+      "samples": 55,
+      "changeable": 1,
+      "created": 1458598913,
+      "updated": 1733693798,
+      "averageSignal": 0
+    },
+    {
+      "radio": "ConeyIsland",
+      "mcc": 310,
+      "net": 487,
+      "area": 21236,
+      "cell": 22445568,
+      "unit": 3,
+      "lon": -73.9771,
+      "lat": 40.5754,
+      "range": 3700,
+      "samples": 60,
+      "changeable": 1,
+      "created": 1458598914,
+      "updated": 1733693799,
+      "averageSignal": 0
+    },
+    {
+      "radio": "Dumbo",
+      "mcc": 310,
+      "net": 488,
+      "area": 21237,
+      "cell": 22445569,
+      "unit": 4,
+      "lon": -73.9877,
+      "lat": 40.7029,
+      "range": 3800,
+      "samples": 65,
+      "changeable": 1,
+      "created": 1458598915,
+      "updated": 1733693800,
+      "averageSignal": 0
+    },
+    {
+      "radio": "WashingtonSquarePark",
+      "mcc": 310,
+      "net": 489,
+      "area": 21238,
+      "cell": 22445570,
+      "unit": 5,
+      "lon": -73.9972,
+      "lat": 40.7308,
+      "range": 3900,
+      "samples": 70,
+      "changeable": 1,
+      "created": 1458598916,
+      "updated": 1733693801,
+      "averageSignal": 0
+    },
+    {
+      "radio": "JFK",
+      "mcc": 310,
+      "net": 490,
+      "area": 21239,
+      "cell": 22445571,
+      "unit": 6,
+      "lon": -73.7781,
+      "lat": 40.6413,
+      "range": 4000,
+      "samples": 75,
+      "changeable": 1,
+      "created": 1458598917,
+      "updated": 1733693802,
+      "averageSignal": 0
+    },
+    {
+      "radio": "StatueOfLiberty",
+      "mcc": 310,
+      "net": 491,
+      "area": 21240,
+      "cell": 22445572,
+      "unit": 7,
+      "lon": -74.0445,
+      "lat": 40.6892,
+      "range": 4100,
+      "samples": 80,
+      "changeable": 1,
+      "created": 1458598918,
+      "updated": 1733693803,
+      "averageSignal": 0
+    }
+  ],
+  "bounds": {
+    "southwest": {
+      "lat": 40.4774,
+      "lon": -74.2591
+    },
+    "northeast": {
+      "lat": 40.9176,
+      "lon": -73.7004
+    }
+  }
+}
