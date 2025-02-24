@@ -5,6 +5,7 @@ const CompassState = {
   roll: 0,
   isEnabled: false,
   canCalibrate: false,
+  angleToTower: 0,
 };
 
 // Initialize compass functionality
@@ -105,6 +106,7 @@ function handleOrientation(event) {
       window.GPSState.closestTower.tower.lat,
       window.GPSState.closestTower.tower.lon,
     );
+    
     const headingToTower = CompassState.heading + angle;
     // CompassState.canCalibrate = Math.abs(headingToTower) < 5 || Math.abs(headingToTower) > 355;
     CompassState.canCalibrate = true;
@@ -123,19 +125,6 @@ function handleOrientation(event) {
       canCalibrate: CompassState.canCalibrate,
     });
   }
-}
-
-function calculateAngleToTower(lat1, lon1, lat2, lon2) {
-  const φ1 = (lat1 * Math.PI) / 180;
-  const φ2 = (lat2 * Math.PI) / 180;
-  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
-
-  const y = Math.sin(Δλ) * Math.cos(φ2);
-  const x =
-    Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
-  let θ = Math.atan2(y, x);
-  // Convert from radians to degrees and normalize to 0-360°
-  return ((θ * 180) / Math.PI + 360) % 360;
 }
 
 // Draw compass on canvas
@@ -188,15 +177,14 @@ function drawCompass(x, y, radius) {
     triangle(-10, -radius + 50, 10, -radius + 50, 0, -radius + 30);
     pop();
 
-    // draw line to tower
+    push();
     const angleToTower = calculateAngleToTower(
       window.GPSState.currentLat,
       window.GPSState.currentLon,
       window.GPSState.closestTower.tower.lat,
       window.GPSState.closestTower.tower.lon,
     );
-    console.log("angleToTower:", angleToTower);
-    push();
+    CompassState.angleToTower = angleToTower;
     rotate(radians(CompassState.heading + angleToTower));
     stroke(0, 255, 0);
     strokeWeight(2);
@@ -215,3 +203,17 @@ function drawCompass(x, y, radius) {
 
 // Export state for other modules
 window.CompassState = CompassState;
+
+// Ref: https://www.sunearthtools.com/tools/distance.php
+function calculateAngleToTower(lat1, lon1, lat2, lon2) {
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x =
+    Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+  let θ = Math.atan2(y, x);
+  // Convert from radians to degrees and normalize to 0-360°
+  return ((θ * 180) / Math.PI + 360) % 360;
+}

@@ -71,7 +71,7 @@ function updatePosition(position) {
   GPSState.currentLat = position.coords.latitude;
   GPSState.currentLon = position.coords.longitude;
 
-  if(!GPSState.randomTower){
+  if(!GPSState.randomTower && GPSState.cellTowers){
     GPSState.randomTower = findOneRandomTower();
   }
 
@@ -88,7 +88,8 @@ function updatePosition(position) {
       window.onLocationUpdate({
         position: { lat: GPSState.currentLat, lon: GPSState.currentLon },
         tower: closest.tower,
-        distance: distance
+        distance: distance,
+        angle: CompassState.angleToTower
       });
     }
 

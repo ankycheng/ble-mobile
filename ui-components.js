@@ -88,7 +88,9 @@ function createLocationInfo() {
     radio: document.getElementById("tower-radio"),
     cell: document.getElementById("tower-cell"),
     location: document.getElementById("tower-location"),
-    distance: document.getElementById("tower-distance")
+    distance: document.getElementById("tower-distance"),
+    angle: document.getElementById("tower-angle"),
+    debug: document.getElementById("tower-debug").querySelector('a')
   };
 }
 
@@ -96,7 +98,9 @@ function createLocationInfo() {
 function updateLocationDisplay(data) {
   if (!data || !UIState.elements.locationInfo) return;
 
-  const { position, tower, distance } = data;
+  const { position, tower, distance, angle } = data;
+
+  console.log("angle", angle);
   
   if (position) {
     UIState.elements.locationInfo.position.textContent = 
@@ -110,11 +114,19 @@ function updateLocationDisplay(data) {
       `Cell ID: ${tower.cell || "-"}`;
     UIState.elements.locationInfo.location.textContent = 
       `Tower Location: ${tower.lat.toFixed(6)}, ${tower.lon.toFixed(6)}`;
+    // Update debug link with OpenCellID URL
+    UIState.elements.locationInfo.debug.href = 
+      `https://www.opencellid.org/#zoom=18&lat=${tower.lat}&lon=${tower.lon}`;
   }
   
   if (distance) {
     UIState.elements.locationInfo.distance.textContent = 
       `Distance: ${distance} meters`;
+  }
+
+  if (angle !== undefined) {
+    UIState.elements.locationInfo.angle.textContent = 
+      `Angle: ${angle.toFixed(1)}°`;
   }
 }
 
