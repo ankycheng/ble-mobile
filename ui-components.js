@@ -38,7 +38,7 @@ function createButtons() {
       window.calibrateBLE();
     }
   });
-  UIState.buttons.calibrate.attribute("disabled", "disabled");
+  // UIState.buttons.calibrate.attribute("disabled", "disabled");
 
   // Find Tower Button
   UIState.buttons.findTower = createButton("Find Closest Tower");
@@ -99,8 +99,6 @@ function updateLocationDisplay(data) {
   if (!data || !UIState.elements.locationInfo) return;
 
   const { position, tower, distance, angle } = data;
-
-  console.log("angle", angle);
   
   if (position) {
     UIState.elements.locationInfo.position.textContent = 

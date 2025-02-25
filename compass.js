@@ -1,63 +1,29 @@
+const isIOS =
+  navigator.userAgent.match(/(iPod|iPhone|iPad)/) &&
+  navigator.userAgent.match(/AppleWebKit/);
+
 // Compass State
 const CompassState = {
   heading: 0,
   pitch: 0,
   roll: 0,
   isEnabled: false,
-  canCalibrate: false,
+  canCalibrate: true,
   angleToTower: 0,
 };
 
-// Initialize compass functionality
 function initializeCompass() {
-  if (typeof DeviceOrientationEvent.requestPermission === "function") {
-    // iOS 13+ devices require permission
-    return {
-      needsPermission: true,
-      requestPermission: requestIOSPermission,
-    };
+  if (isIOS) {
+    alert("not supported on iOS");
   } else {
-    // Non iOS 13+ devices
-    enableCompass();
-    return {
-      needsPermission: false,
-    };
-  }
-}
-
-// Request iOS permission
-function requestIOSPermission() {
-  DeviceOrientationEvent.requestPermission()
-    .then((response) => {
-      if (response === "granted") {
-        enableCompass();
-      } else {
-        console.log("Device orientation permission denied");
-        if (window.onCompassError) {
-          window.onCompassError("Permission denied for device orientation");
-        }
-      }
-    })
-    .catch((error) => {
-      console.error("Error requesting device orientation permission:", error);
-      if (window.onCompassError) {
-        window.onCompassError("Error requesting orientation permission");
-      }
-    });
-}
-
-// Enable compass event listening
-function enableCompass() {
-  if ("DeviceOrientationAbsoluteEvent" in window) {
     window.addEventListener(
       "deviceorientationabsolute",
       handleOrientation,
       true
     );
-  } else {
-    window.addEventListener("deviceorientation", handleOrientation, true);
+    CompassState.isEnabled = true;
+    return { needsPermission: false };
   }
-  CompassState.isEnabled = true;
 }
 
 // Disable compass
@@ -72,6 +38,7 @@ function disableCompass() {
 }
 
 // Handle orientation updates
+// https://dev.to/orkhanjafarovr/real-compass-on-mobile-browsers-with-javascript-3emi
 function handleOrientation(event) {
   // iOS devices
   if (event.webkitCompassHeading) {
@@ -79,14 +46,13 @@ function handleOrientation(event) {
   }
   // Android devices
   else if (event.alpha !== null) {
-    // CompassState.heading = 360 - event.alpha;
     CompassState.heading = event.alpha;
     // Adjust for different device orientations
     const orientation = screen.orientation.type;
     if (orientation === "landscape-primary") {
-      CompassState.heading += 90;
-    } else if (orientation === "landscape-secondary") {
       CompassState.heading -= 90;
+    } else if (orientation === "landscape-secondary") {
+      CompassState.heading += 90;
     } else if (orientation === "portrait-secondary") {
       CompassState.heading += 180;
     }
@@ -104,9 +70,9 @@ function handleOrientation(event) {
       window.GPSState.currentLat,
       window.GPSState.currentLon,
       window.GPSState.closestTower.tower.lat,
-      window.GPSState.closestTower.tower.lon,
+      window.GPSState.closestTower.tower.lon
     );
-    
+
     const headingToTower = CompassState.heading + angle;
     // CompassState.canCalibrate = Math.abs(headingToTower) < 5 || Math.abs(headingToTower) > 355;
     CompassState.canCalibrate = true;
@@ -182,7 +148,7 @@ function drawCompass(x, y, radius) {
       window.GPSState.currentLat,
       window.GPSState.currentLon,
       window.GPSState.closestTower.tower.lat,
-      window.GPSState.closestTower.tower.lon,
+      window.GPSState.closestTower.tower.lon
     );
     CompassState.angleToTower = angleToTower;
     rotate(radians(CompassState.heading + angleToTower));
