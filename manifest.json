@@ -1,6 +1,13 @@
 {
   "name": "ble-mobile",
   "short_name": "ble-mobile",
+  "icons": [
+    {
+      "src": "icons/512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
   "theme_color": "#2196f3",
   "background_color": "#2196f3",
   "start_url": "./index.html",

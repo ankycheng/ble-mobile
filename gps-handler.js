@@ -13,10 +13,12 @@ const GPSState = {
 // GPS Configuration
 const GPSConfig = {
   options: {
-    enableHighAccuracy: true,
+    enableHighAccuracy: false,
     timeout: 5000,
-    maximumAge: 0
-  }
+    maximumAge: 10000
+  },
+  maxRetries: 10,
+  retryDelay: 10
 };
 
 // Load cell tower data
@@ -93,10 +95,12 @@ function updatePosition(position) {
       });
     }
 
+
+    window.updateBLEDistance(true);
     // Update BLE distance notification if tower is nearby
-    if (window.updateBLEDistance) {
-      window.updateBLEDistance(distance < 100);
-    }
+    // if (window.updateBLEDistance) {
+    //   window.updateBLEDistance(distance < 100);
+    // }
   }
 }
 
