@@ -13,22 +13,47 @@ const GPSState = {
 // GPS Configuration
 const GPSConfig = {
   options: {
-    enableHighAccuracy: false,
-    timeout: 5000,
+    enableHighAccuracy: true,
+    timeout: 15000,
     maximumAge: 10000
   },
-  maxRetries: 10,
-  retryDelay: 10
+  maxRetries: 3,
+  retryDelay: 1000
 };
 
 // Load cell tower data
-function loadCellTowerData(callback) {
-  // fetch("./newyork.json")
-  fetch("./test_data.json")
+function loadCellTowerData(callback, filePath = "./test_data.json") {
+  fetch(filePath)
     .then(response => response.json())
     .then(data => {
       GPSState.cellTowers = data.towers;
-      console.log("Loaded", GPSState.cellTowers.length, "cell towers");
+      console.log("Loaded", GPSState.cellTowers.length, "cell towers from", filePath);
+      
+      // Reset random tower when switching lists
+      GPSState.randomTower = null;
+      
+      // Recalculate closest tower with current position
+      if (GPSState.currentLat !== 0 && GPSState.currentLon !== 0) {
+        const closest = GPSState.isRandom ? 
+          findOneRandomTower() : 
+          findClosestTower(GPSState.currentLat, GPSState.currentLon);
+
+        if (closest) {
+          GPSState.closestTower = closest;
+          const distance = closest.distance.toFixed(2);
+
+          // Update UI with new tower info
+          if (window.onLocationUpdate) {
+            window.onLocationUpdate({
+              position: { lat: GPSState.currentLat, lon: GPSState.currentLon },
+              tower: closest.tower,
+              distance: distance,
+              angle: CompassState.angleToTower
+            });
+          }
+        }
+      }
+
       if (callback) callback();
     })
     .catch(error => console.error("Error loading cell tower data:", error));
@@ -154,6 +179,22 @@ function handleGPSError(error) {
 
   console.error("GPS Error:", errorMessages[error.code] || errorMessages[0]);
   
+  // Add retry logic for timeout errors
+  if (error.code === 3 && GPSConfig.maxRetries > 0) {
+    console.log(`Retrying GPS location in ${GPSConfig.retryDelay}ms. Attempts remaining: ${GPSConfig.maxRetries}`);
+    GPSConfig.maxRetries--;
+    
+    setTimeout(() => {
+      navigator.geolocation.getCurrentPosition(
+        updatePosition,
+        handleGPSError,
+        GPSConfig.options
+      );
+    }, GPSConfig.retryDelay);
+    
+    return;
+  }
+
   if (window.onGPSError) {
     window.onGPSError(errorMessages[error.code] || errorMessages[0]);
   }

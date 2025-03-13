@@ -1,0 +1,25 @@
+{
+  "towers": [
+    {
+      "radio": "LTE",
+      "cell": 12345678,
+      "lat": 40.7128,
+      "lon": -74.0060,
+      "name": "Downtown NYC"
+    },
+    {
+      "radio": "5G",
+      "cell": 87654321,
+      "lat": 40.7580,
+      "lon": -73.9855,
+      "name": "Times Square"
+    },
+    {
+      "radio": "LTE",
+      "cell": 11223344,
+      "lat": 40.7527,
+      "lon": -74.0045,
+      "name": "Penn Station"
+    }
+  ]
+} 

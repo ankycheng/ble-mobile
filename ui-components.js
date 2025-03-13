@@ -1,7 +1,9 @@
 // UI State
 const UIState = {
   buttons: {},
-  elements: {}
+  elements: {},
+  isDevMode: localStorage.getItem('isDevMode') === 'true',
+  currentTowerList: localStorage.getItem('currentTowerList') || "test" // "test" or "favorites"
 };
 
 // Initialize UI components
@@ -9,47 +11,98 @@ function initializeUI() {
   createButtons();
   setupEventListeners();
   createLocationInfo();
+  updateButtonVisibility();
+  
+  // Update button text based on saved selection
+  if (UIState.buttons.switchTowerList) {
+    UIState.buttons.switchTowerList.html(
+      UIState.currentTowerList === "test" ? "Switch to Favorites" : "Switch to All Towers"
+    );
+  }
 }
 
 // Create all buttons
 function createButtons() {
+  // Dev Mode Toggle Button
+  UIState.buttons.devMode = createButton("Dev Mode");
+  styleButton(UIState.buttons.devMode, {
+    position: "fixed",
+    top: "10px",
+    right: "10px",
+    width: "100px",
+    height: "30px",
+    backgroundColor: "#333",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    fontSize: "12px",
+    zIndex: "1000"
+  });
+  UIState.buttons.devMode.mousePressed(() => {
+    UIState.isDevMode = !UIState.isDevMode;
+    // Save dev mode state to localStorage
+    localStorage.setItem('isDevMode', UIState.isDevMode);
+    updateButtonVisibility();
+  });
+
+  // Create container for main buttons
+  const mainButtonsContainer = createDiv();
+  styleButton(mainButtonsContainer, {
+    display: "flex",
+    gap: "20px",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    marginTop: "20px",
+    marginBottom: "20px",
+    marginLeft: "20px"
+  });
+
   // Connect Button
   UIState.buttons.connect = createButton("Connect to Arduino");
   styleButton(UIState.buttons.connect, {
-    marginLeft: "30px",
     width: "150px",
-    height: "50px"
+    height: "50px",
+    backgroundColor: "#333",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    fontSize: "14px"
   });
   UIState.buttons.connect.mousePressed(() => {
     if (window.connectToBLE) {
       window.connectToBLE();
     }
   });
+  mainButtonsContainer.child(UIState.buttons.connect);
 
   // Calibrate Button
   UIState.buttons.calibrate = createButton("Calibrate");
   styleButton(UIState.buttons.calibrate, {
-    marginLeft: "30px",
     width: "100px",
-    height: "50px"
+    height: "50px",
+    backgroundColor: "#333",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    fontSize: "14px"
   });
   UIState.buttons.calibrate.mousePressed(() => {
     if (window.calibrateBLE) {
       window.calibrateBLE();
     }
   });
-  // UIState.buttons.calibrate.attribute("disabled", "disabled");
+  mainButtonsContainer.child(UIState.buttons.calibrate);
 
   // Find Tower Button
   UIState.buttons.findTower = createButton("Find Closest Tower");
   styleButton(UIState.buttons.findTower, {
-    marginLeft: "30px",
     width: "150px",
     height: "50px",
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#333",
     color: "white",
     border: "none",
-    borderRadius: "4px"
+    borderRadius: "4px",
+    fontSize: "14px"
   });
   UIState.buttons.findTower.mousePressed(() => {
     console.log("findTower button pressed");
@@ -57,14 +110,47 @@ function createButtons() {
       window.findClosestTower(window.GPSState.currentLat, window.GPSState.currentLon);
     }
   });
+  mainButtonsContainer.child(UIState.buttons.findTower);
+
+  // Switch Tower List Button
+  UIState.buttons.switchTowerList = createButton("Switch to Favorites");
+  styleButton(UIState.buttons.switchTowerList, {
+    width: "150px",
+    height: "50px",
+    backgroundColor: "#333",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    fontSize: "14px"
+  });
+  UIState.buttons.switchTowerList.mousePressed(() => {
+    if (window.loadCellTowerData) {
+      UIState.currentTowerList = UIState.currentTowerList === "test" ? "favorites" : "test";
+      // Save selection to localStorage
+      localStorage.setItem('currentTowerList', UIState.currentTowerList);
+      
+      const filePath = UIState.currentTowerList === "test" ? "./test_data.json" : "./favorites.json";
+      window.loadCellTowerData(() => {
+        UIState.buttons.switchTowerList.html(
+          UIState.currentTowerList === "test" ? "Switch to Favorites" : "Switch to All Towers"
+        );
+      }, filePath);
+    }
+  });
+  mainButtonsContainer.child(UIState.buttons.switchTowerList);
 
   // Compass Permission Button (iOS)
   if (typeof DeviceOrientationEvent.requestPermission === "function") {
     UIState.buttons.compass = createButton("Enable Compass");
     styleButton(UIState.buttons.compass, {
-      marginLeft: "30px",
       width: "150px",
-      height: "50px"
+      height: "50px",
+      backgroundColor: "#333",
+      color: "white",
+      border: "none",
+      borderRadius: "4px",
+      fontSize: "14px",
+      marginTop: "20px"
     });
     UIState.buttons.compass.mousePressed(() => {
       if (window.requestIOSPermission) {
@@ -152,6 +238,31 @@ function setupEventListeners() {
   window.onCompassError = (error) => {
     console.error("Compass Error:", error);
   };
+}
+
+// Update button visibility based on dev mode
+function updateButtonVisibility() {
+  // Always show connect and calibrate buttons
+  UIState.buttons.connect.style("display", "block");
+  UIState.buttons.calibrate.style("display", "block");
+  
+  // Show/hide other buttons based on dev mode
+  const devModeButtons = [UIState.buttons.findTower, UIState.buttons.compass];
+  devModeButtons.forEach(button => {
+    if (button) {
+      button.style("display", UIState.isDevMode ? "block" : "none");
+    }
+  });
+
+  // Update dev mode button appearance
+  UIState.buttons.devMode.style("backgroundColor", UIState.isDevMode ? "#000" : "#333");
+  UIState.buttons.devMode.html(UIState.isDevMode ? "Dev Mode ON" : "Dev Mode");
+
+  // Show/hide location info elements based on dev mode
+  const locationInfo = document.getElementById("location-info");
+  if (locationInfo) {
+    locationInfo.style.display = UIState.isDevMode ? "block" : "none";
+  }
 }
 
 // Export state for other modules

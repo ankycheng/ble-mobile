@@ -4,6 +4,7 @@ function preload() {
 }
 
 function setup() {
+  // Create canvas with fixed width and height
   createCanvas(400, 400);
   
   // Initialize all components
