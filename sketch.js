@@ -4,8 +4,8 @@ function preload() {
 }
 
 function setup() {
-  // Create canvas with fixed width and height
-  createCanvas(400, 400);
+  // Create canvas with screen width and fixed height
+  createCanvas(window.innerWidth, 800);
   
   // Initialize all components
   initializeBLE();
@@ -22,12 +22,17 @@ function setup() {
   }
 }
 
+// Handle window resize
+function windowResized() {
+  resizeCanvas(window.innerWidth, 800);
+}
+
 function draw() {
   background(255);
   
   // Draw compass if enabled
   if (CompassState.isEnabled) {
-    drawCompass(width / 2, height / 2, 150);
+    drawCompass(width / 2, height / 2, 300); // Increased radius from 150 to 300
   }
 }
 

@@ -14,10 +14,10 @@ const GPSState = {
 const GPSConfig = {
   options: {
     enableHighAccuracy: true,
-    timeout: 15000,
-    maximumAge: 10000
+    timeout: 5000,
+    maximumAge: 5000
   },
-  maxRetries: 3,
+  maxRetries: 10,
   retryDelay: 1000
 };
 

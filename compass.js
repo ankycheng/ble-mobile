@@ -98,8 +98,12 @@ function drawCompass(x, y, radius) {
   // Save current drawing state
   push();
 
+  // Calculate center position based on screen width
+  const screenWidth = window.innerWidth;
+  const centerX = screenWidth / 2;
+  
   // Move to compass center
-  translate(x, y);
+  translate(centerX, y);
 
   // Draw outer circle
   noFill();
@@ -143,19 +147,22 @@ function drawCompass(x, y, radius) {
     triangle(-10, -radius + 50, 10, -radius + 50, 0, -radius + 30);
     pop();
 
-    push();
-    const angleToTower = calculateAngleToTower(
-      window.GPSState.currentLat,
-      window.GPSState.currentLon,
-      window.GPSState.closestTower.tower.lat,
-      window.GPSState.closestTower.tower.lon
-    );
-    CompassState.angleToTower = angleToTower;
-    rotate(radians(CompassState.heading + angleToTower));
-    stroke(0, 255, 0);
-    strokeWeight(2);
-    line(0, 0, 0, -radius + 40);
-    pop();
+    // Only show green pointer in dev mode
+    if (window.UIState && window.UIState.isDevMode) {
+      push();
+      const angleToTower = calculateAngleToTower(
+        window.GPSState.currentLat,
+        window.GPSState.currentLon,
+        window.GPSState.closestTower.tower.lat,
+        window.GPSState.closestTower.tower.lon
+      );
+      CompassState.angleToTower = angleToTower;
+      rotate(radians(CompassState.heading + angleToTower));
+      stroke(0, 255, 0);
+      strokeWeight(2);
+      line(0, 0, 0, -radius + 40);
+      pop();
+    }
 
     // Draw center dot
     fill(0);

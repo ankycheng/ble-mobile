@@ -27,15 +27,15 @@ function createButtons() {
   UIState.buttons.devMode = createButton("Dev Mode");
   styleButton(UIState.buttons.devMode, {
     position: "fixed",
-    top: "10px",
-    right: "10px",
-    width: "100px",
-    height: "30px",
+    top: "20px",
+    right: "20px",
+    width: "160px",
+    height: "50px",
     backgroundColor: "#333",
     color: "white",
     border: "none",
-    borderRadius: "4px",
-    fontSize: "12px",
+    borderRadius: "8px",
+    fontSize: "18px",
     zIndex: "1000"
   });
   UIState.buttons.devMode.mousePressed(() => {
@@ -49,24 +49,29 @@ function createButtons() {
   const mainButtonsContainer = createDiv();
   styleButton(mainButtonsContainer, {
     display: "flex",
+    flexWrap: "wrap",
     gap: "20px",
     alignItems: "center",
-    justifyContent: "flex-start",
+    justifyContent: "center",
     marginTop: "20px",
     marginBottom: "20px",
-    marginLeft: "20px"
+    marginLeft: "20px",
+    marginRight: "20px",
+    width: "100%",
+    maxWidth: "1200px",
+    margin: "20px auto"
   });
 
   // Connect Button
   UIState.buttons.connect = createButton("Connect to Arduino");
   styleButton(UIState.buttons.connect, {
-    width: "150px",
-    height: "50px",
+    width: "250px",
+    height: "80px",
     backgroundColor: "#333",
     color: "white",
     border: "none",
-    borderRadius: "4px",
-    fontSize: "14px"
+    borderRadius: "8px",
+    fontSize: "20px"
   });
   UIState.buttons.connect.mousePressed(() => {
     if (window.connectToBLE) {
@@ -78,13 +83,13 @@ function createButtons() {
   // Calibrate Button
   UIState.buttons.calibrate = createButton("Calibrate");
   styleButton(UIState.buttons.calibrate, {
-    width: "100px",
-    height: "50px",
+    width: "180px",
+    height: "80px",
     backgroundColor: "#333",
     color: "white",
     border: "none",
-    borderRadius: "4px",
-    fontSize: "14px"
+    borderRadius: "8px",
+    fontSize: "20px"
   });
   UIState.buttons.calibrate.mousePressed(() => {
     if (window.calibrateBLE) {
@@ -96,13 +101,13 @@ function createButtons() {
   // Find Tower Button
   UIState.buttons.findTower = createButton("Find Closest Tower");
   styleButton(UIState.buttons.findTower, {
-    width: "150px",
-    height: "50px",
+    width: "250px",
+    height: "80px",
     backgroundColor: "#333",
     color: "white",
     border: "none",
-    borderRadius: "4px",
-    fontSize: "14px"
+    borderRadius: "8px",
+    fontSize: "20px"
   });
   UIState.buttons.findTower.mousePressed(() => {
     console.log("findTower button pressed");
@@ -115,13 +120,13 @@ function createButtons() {
   // Switch Tower List Button
   UIState.buttons.switchTowerList = createButton("Switch to Favorites");
   styleButton(UIState.buttons.switchTowerList, {
-    width: "150px",
-    height: "50px",
+    width: "250px",
+    height: "80px",
     backgroundColor: "#333",
     color: "white",
     border: "none",
-    borderRadius: "4px",
-    fontSize: "14px"
+    borderRadius: "8px",
+    fontSize: "20px"
   });
   UIState.buttons.switchTowerList.mousePressed(() => {
     if (window.loadCellTowerData) {
@@ -143,13 +148,13 @@ function createButtons() {
   if (typeof DeviceOrientationEvent.requestPermission === "function") {
     UIState.buttons.compass = createButton("Enable Compass");
     styleButton(UIState.buttons.compass, {
-      width: "150px",
-      height: "50px",
+      width: "250px",
+      height: "80px",
       backgroundColor: "#333",
       color: "white",
       border: "none",
-      borderRadius: "4px",
-      fontSize: "14px",
+      borderRadius: "8px",
+      fontSize: "20px",
       marginTop: "20px"
     });
     UIState.buttons.compass.mousePressed(() => {
