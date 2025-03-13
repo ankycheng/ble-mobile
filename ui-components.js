@@ -25,19 +25,7 @@ function initializeUI() {
 function createButtons() {
   // Dev Mode Toggle Button
   UIState.buttons.devMode = createButton("Dev Mode");
-  styleButton(UIState.buttons.devMode, {
-    position: "fixed",
-    top: "20px",
-    right: "20px",
-    width: "160px",
-    height: "50px",
-    backgroundColor: "#333",
-    color: "white",
-    border: "none",
-    borderRadius: "8px",
-    fontSize: "18px",
-    zIndex: "1000"
-  });
+  UIState.buttons.devMode.id('dev-mode-button');
   UIState.buttons.devMode.mousePressed(() => {
     UIState.isDevMode = !UIState.isDevMode;
     // Save dev mode state to localStorage
@@ -47,32 +35,10 @@ function createButtons() {
 
   // Create container for main buttons
   const mainButtonsContainer = createDiv();
-  styleButton(mainButtonsContainer, {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "20px",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: "20px",
-    marginBottom: "20px",
-    marginLeft: "20px",
-    marginRight: "20px",
-    width: "100%",
-    maxWidth: "1200px",
-    margin: "20px auto"
-  });
+  mainButtonsContainer.class('main-buttons-container');
 
   // Connect Button
   UIState.buttons.connect = createButton("Connect to Arduino");
-  styleButton(UIState.buttons.connect, {
-    width: "250px",
-    height: "80px",
-    backgroundColor: "#333",
-    color: "white",
-    border: "none",
-    borderRadius: "8px",
-    fontSize: "20px"
-  });
   UIState.buttons.connect.mousePressed(() => {
     if (window.connectToBLE) {
       window.connectToBLE();
@@ -82,15 +48,7 @@ function createButtons() {
 
   // Calibrate Button
   UIState.buttons.calibrate = createButton("Calibrate");
-  styleButton(UIState.buttons.calibrate, {
-    width: "180px",
-    height: "80px",
-    backgroundColor: "#333",
-    color: "white",
-    border: "none",
-    borderRadius: "8px",
-    fontSize: "20px"
-  });
+  UIState.buttons.calibrate.id('calibrate-button');
   UIState.buttons.calibrate.mousePressed(() => {
     if (window.calibrateBLE) {
       window.calibrateBLE();
@@ -100,15 +58,7 @@ function createButtons() {
 
   // Find Tower Button
   UIState.buttons.findTower = createButton("Find Closest Tower");
-  styleButton(UIState.buttons.findTower, {
-    width: "250px",
-    height: "80px",
-    backgroundColor: "#333",
-    color: "white",
-    border: "none",
-    borderRadius: "8px",
-    fontSize: "20px"
-  });
+  UIState.buttons.findTower.id('find-tower-button');
   UIState.buttons.findTower.mousePressed(() => {
     console.log("findTower button pressed");
     if (window.GPSState && window.findClosestTower) {
@@ -119,15 +69,6 @@ function createButtons() {
 
   // Switch Tower List Button
   UIState.buttons.switchTowerList = createButton("Switch to Favorites");
-  styleButton(UIState.buttons.switchTowerList, {
-    width: "250px",
-    height: "80px",
-    backgroundColor: "#333",
-    color: "white",
-    border: "none",
-    borderRadius: "8px",
-    fontSize: "20px"
-  });
   UIState.buttons.switchTowerList.mousePressed(() => {
     if (window.loadCellTowerData) {
       UIState.currentTowerList = UIState.currentTowerList === "test" ? "favorites" : "test";
@@ -147,29 +88,13 @@ function createButtons() {
   // Compass Permission Button (iOS)
   if (typeof DeviceOrientationEvent.requestPermission === "function") {
     UIState.buttons.compass = createButton("Enable Compass");
-    styleButton(UIState.buttons.compass, {
-      width: "250px",
-      height: "80px",
-      backgroundColor: "#333",
-      color: "white",
-      border: "none",
-      borderRadius: "8px",
-      fontSize: "20px",
-      marginTop: "20px"
-    });
+    UIState.buttons.compass.id('compass-button');
     UIState.buttons.compass.mousePressed(() => {
       if (window.requestIOSPermission) {
         window.requestIOSPermission();
       }
     });
   }
-}
-
-// Style a button with given properties
-function styleButton(button, styles) {
-  Object.entries(styles).forEach(([property, value]) => {
-    button.style(property, value);
-  });
 }
 
 // Create location info elements
@@ -247,27 +172,11 @@ function setupEventListeners() {
 
 // Update button visibility based on dev mode
 function updateButtonVisibility() {
-  // Always show connect and calibrate buttons
-  UIState.buttons.connect.style("display", "block");
-  UIState.buttons.calibrate.style("display", "block");
+  // Update body class for dev/user mode
+  document.body.className = UIState.isDevMode ? 'dev-mode' : 'user-mode';
   
-  // Show/hide other buttons based on dev mode
-  const devModeButtons = [UIState.buttons.findTower, UIState.buttons.compass];
-  devModeButtons.forEach(button => {
-    if (button) {
-      button.style("display", UIState.isDevMode ? "block" : "none");
-    }
-  });
-
-  // Update dev mode button appearance
-  UIState.buttons.devMode.style("backgroundColor", UIState.isDevMode ? "#000" : "#333");
-  UIState.buttons.devMode.html(UIState.isDevMode ? "Dev Mode ON" : "Dev Mode");
-
-  // Show/hide location info elements based on dev mode
-  const locationInfo = document.getElementById("location-info");
-  if (locationInfo) {
-    locationInfo.style.display = UIState.isDevMode ? "block" : "none";
-  }
+  // Update dev mode button text
+  UIState.buttons.devMode.html(UIState.isDevMode ? "Dev Mode" : "User Mode");
 }
 
 // Export state for other modules

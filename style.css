@@ -20,6 +20,58 @@ canvas {
   align-items: center;
 }
 
+/* Button Container */
+.main-buttons-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: center;
+  justify-content: center;
+  margin: 20px auto;
+  width: 100%;
+  max-width: 1200px;
+}
+
+/* Common Button Styles */
+button {
+  width: auto;
+  height: auto;
+  padding: 10px 20px;
+  background-color: #333;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 20px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #444;
+}
+
+button:disabled {
+  background-color: #666;
+  cursor: not-allowed;
+}
+
+/* Dev Mode Button */
+#dev-mode-button {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 160px;
+  height: 50px;
+  font-size: 18px;
+  z-index: 1000;
+}
+
+/* Calibrate Button */
+#calibrate-button {
+  width: 180px;
+}
+
+/* Location Info */
 #location-info {
   bottom: 0;
   left: 0;
@@ -36,7 +88,7 @@ canvas {
 #location-info p {
   margin: 8px 0;
   text-align: center;
-  font-size: 20px;
+  font-size: 1rem;
 }
 
 #current-position {
@@ -47,4 +99,34 @@ canvas {
 #tower-distance {
   color: #4caf50;
   font-weight: bold;
+}
+
+/* Dev Mode Styles */
+.dev-mode #location-info {
+  display: block;
+}
+
+.dev-mode #dev-mode-button {
+  background-color: #000;
+}
+
+/* User Mode Styles */
+.user-mode #location-info {
+  display: none;
+}
+
+.user-mode #dev-mode-button {
+  background-color: #333;
+}
+
+/* Hide dev mode buttons by default */
+#find-tower-button,
+#compass-button {
+  display: none;
+}
+
+/* Show dev mode buttons when in dev mode */
+.dev-mode #find-tower-button,
+.dev-mode #compass-button {
+  display: block;
 }

@@ -4,8 +4,10 @@ function preload() {
 }
 
 function setup() {
-  // Create canvas with screen width and fixed height
-  createCanvas(window.innerWidth, 800);
+  // Create canvas with responsive size
+  const canvasWidth = Math.min(window.innerWidth, 1200); // Max width of 1200px
+  const canvasHeight = Math.min(window.innerHeight * 0.4, 800); // 80% of window height, max 800px
+  createCanvas(canvasWidth, canvasHeight);
   
   // Initialize all components
   initializeBLE();
@@ -24,7 +26,9 @@ function setup() {
 
 // Handle window resize
 function windowResized() {
-  resizeCanvas(window.innerWidth, 800);
+  const canvasWidth = Math.min(window.innerWidth, 1200); // Max width of 1200px
+  const canvasHeight = Math.min(window.innerHeight * 0.4, 800); // 80% of window height, max 800px
+  resizeCanvas(canvasWidth, canvasHeight);
 }
 
 function draw() {
@@ -32,7 +36,10 @@ function draw() {
   
   // Draw compass if enabled
   if (CompassState.isEnabled) {
-    drawCompass(width / 2, height / 2, 300); // Increased radius from 150 to 300
+    // Calculate compass radius based on canvas dimensions
+    const maxRadius = Math.min(width, height) / 2;
+    const compassRadius = Math.min(200, maxRadius * 0.8); // 80% of the smaller canvas dimension, max 200px
+    drawCompass(width / 2, height / 2, compassRadius);
   }
 }
 
