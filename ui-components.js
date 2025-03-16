@@ -16,7 +16,7 @@ function initializeUI() {
   // Update button text based on saved selection
   if (UIState.buttons.switchTowerList) {
     UIState.buttons.switchTowerList.html(
-      UIState.currentTowerList === "test" ? "Switch to Favorites" : "Switch to All Towers"
+      UIState.currentTowerList === "test" ? "All Towers" : "Favorites"
     );
   }
 }
@@ -57,18 +57,40 @@ function createButtons() {
   mainButtonsContainer.child(UIState.buttons.calibrate);
 
   // Find Tower Button
-  UIState.buttons.findTower = createButton("Find Closest Tower");
+  UIState.buttons.findTower = createButton(window.GPSState && window.GPSState.isRandom ? "Random Mode" : "Closest Mode");
   UIState.buttons.findTower.id('find-tower-button');
   UIState.buttons.findTower.mousePressed(() => {
     console.log("findTower button pressed");
-    if (window.GPSState && window.findClosestTower) {
-      window.findClosestTower(window.GPSState.currentLat, window.GPSState.currentLon);
+    if (window.GPSState) {
+      window.GPSState.isRandom = !window.GPSState.isRandom;
+      // Save mode preference to localStorage
+      localStorage.setItem('towerMode', window.GPSState.isRandom ? 'random' : 'closest');
+      UIState.buttons.findTower.html(window.GPSState.isRandom ? "Random Mode" : "Closest Mode");
+      
+      // Update tower selection based on new mode
+      if (window.GPSState.currentLat !== 0 && window.GPSState.currentLon !== 0) {
+        const closest = window.GPSState.isRandom ? 
+          window.findOneRandomTower() : 
+          window.findClosestTower(window.GPSState.currentLat, window.GPSState.currentLon);
+          
+        if (closest) {
+          window.GPSState.closestTower = closest;
+          if (window.onLocationUpdate) {
+            window.onLocationUpdate({
+              position: { lat: window.GPSState.currentLat, lon: window.GPSState.currentLon },
+              tower: closest.tower,
+              distance: closest.distance.toFixed(2),
+              angle: window.CompassState.angleToTower
+            });
+          }
+        }
+      }
     }
   });
   mainButtonsContainer.child(UIState.buttons.findTower);
 
   // Switch Tower List Button
-  UIState.buttons.switchTowerList = createButton("Switch to Favorites");
+  UIState.buttons.switchTowerList = createButton(UIState.currentTowerList === "test" ? "All Towers" : "Favorites");
   UIState.buttons.switchTowerList.mousePressed(() => {
     if (window.loadCellTowerData) {
       UIState.currentTowerList = UIState.currentTowerList === "test" ? "favorites" : "test";
@@ -78,7 +100,7 @@ function createButtons() {
       const filePath = UIState.currentTowerList === "test" ? "./test_data.json" : "./favorites.json";
       window.loadCellTowerData(() => {
         UIState.buttons.switchTowerList.html(
-          UIState.currentTowerList === "test" ? "Switch to Favorites" : "Switch to All Towers"
+          UIState.currentTowerList === "test" ? "All Towers" : "Favorites"
         );
       }, filePath);
     }

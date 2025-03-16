@@ -7,7 +7,7 @@ const GPSState = {
   closestTower: null,
   randomTower: null,
   isTracking: false,
-  isRandom: true
+  isRandom: localStorage.getItem('towerMode') === 'random'
 };
 
 // GPS Configuration
@@ -31,6 +31,11 @@ function loadCellTowerData(callback, filePath = "./test_data.json") {
       
       // Reset random tower when switching lists
       GPSState.randomTower = null;
+      
+      // Update button text based on current mode
+      if (window.UIState && window.UIState.buttons.findTower) {
+        window.UIState.buttons.findTower.html(GPSState.isRandom ? "Random Mode" : "Closest Mode");
+      }
       
       // Recalculate closest tower with current position
       if (GPSState.currentLat !== 0 && GPSState.currentLon !== 0) {

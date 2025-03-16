@@ -97,13 +97,9 @@ function handleOrientation(event) {
 function drawCompass(x, y, radius) {
   // Save current drawing state
   push();
-
-  // Calculate center position based on screen width
-  const screenWidth = window.innerWidth;
-  const centerX = screenWidth / 2;
   
   // Move to compass center
-  translate(centerX, y);
+  translate(x, y);
 
   // Draw outer circle
   noFill();
