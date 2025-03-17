@@ -1,7 +1,23 @@
 // UI State
 const UIState = {
-  buttons: {},
-  elements: {},
+  buttons: {
+    devMode: null,
+    connect: null,
+    reset: null,
+    calibrate: null,
+    findTower: null,
+    switchTowerList: null,
+    compass: null,
+    wanderMode: null,  // New button for wander mode
+  },
+  elements: {
+    locationInfo: {
+      position: null,
+      tower: null,
+      distance: null,
+      angle: null
+    }
+  },
   isDevMode: localStorage.getItem('isDevMode') === 'true',
   currentTowerList: localStorage.getItem('currentTowerList') || "test" // "test" or "favorites"
 };
@@ -30,6 +46,7 @@ function initializeButtons() {
   UIState.buttons.findTower = document.getElementById('find-tower-button');
   UIState.buttons.switchTowerList = document.getElementById('switch-tower-button');
   UIState.buttons.compass = document.getElementById('compass-button');
+  UIState.buttons.wanderMode = document.getElementById('wander-mode-button');
 
   // Dev Mode Toggle Button
   UIState.buttons.devMode.addEventListener('click', () => {
@@ -56,6 +73,10 @@ function initializeButtons() {
   UIState.buttons.calibrate.addEventListener('click', () => {
     if (window.calibrateBLE) {
       window.calibrateBLE();
+      // Start wander mode after calibration only in dev mode
+      if (window.WanderMode && UIState.isDevMode) {
+        window.WanderMode.start();
+      }
     }
   });
 
@@ -111,6 +132,30 @@ function initializeButtons() {
   } else {
     // Hide compass button if not needed
     UIState.buttons.compass.style.display = 'none';
+  }
+
+  // Wander Mode Button
+  UIState.buttons.wanderMode.addEventListener('click', () => {
+    const button = UIState.buttons.wanderMode;
+    const isActive = button.classList.contains('active');
+    
+    if (isActive) {
+      // Stop wander mode
+      if (window.WanderMode) {
+        window.WanderMode.stop();
+      }
+    } else {
+      // Start wander mode
+      if (window.WanderMode) {
+        window.WanderMode.start();
+      }
+    }
+  });
+
+  // Initialize wander mode button state
+  if (window.WanderMode && WanderModeState.isActive) {
+    UIState.buttons.wanderMode.classList.add('active');
+    UIState.buttons.wanderMode.textContent = 'Wander Mode On';
   }
 }
 
@@ -194,6 +239,15 @@ function setupEventListeners() {
 function updateButtonVisibility() {
   document.body.className = UIState.isDevMode ? 'dev-mode' : 'user-mode';
   UIState.buttons.devMode.innerHTML = UIState.isDevMode ? "Dev Mode" : "User Mode";
+  
+  // Hide/show wander mode button based on dev mode
+  if (UIState.buttons.wanderMode) {
+    UIState.buttons.wanderMode.style.display = UIState.isDevMode ? 'block' : 'none';
+    // If switching to user mode, make sure to stop wander mode
+    if (!UIState.isDevMode && window.WanderMode) {
+      window.WanderMode.stop();
+    }
+  }
 }
 
 // Export state for other modules

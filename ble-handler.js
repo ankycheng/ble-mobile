@@ -96,3 +96,4 @@ function resetDevice() {
 
 // Export functions for global access
 window.resetDevice = resetDevice;
+window.BLEState = BLEState;

@@ -108,8 +108,8 @@ function updatePosition(position) {
   }
 
   const closest = GPSState.isRandom ? 
-  GPSState.randomTower : 
-  findClosestTower(GPSState.currentLat, GPSState.currentLon);
+    GPSState.randomTower : 
+    findClosestTower(GPSState.currentLat, GPSState.currentLon);
 
   if (closest) {
     GPSState.closestTower = closest;
@@ -125,12 +125,10 @@ function updatePosition(position) {
       });
     }
 
-
-    window.updateBLEDistance(true);
-    // Update BLE distance notification if tower is nearby
-    // if (window.updateBLEDistance) {
-    //   window.updateBLEDistance(distance < 100);
-    // }
+    // Update wander mode phase if active
+    if (window.WanderMode) {
+      window.WanderMode.updatePhase(parseFloat(distance));
+    }
   }
 }
 
