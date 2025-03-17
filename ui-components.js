@@ -8,66 +8,65 @@ const UIState = {
 
 // Initialize UI components
 function initializeUI() {
-  createButtons();
+  initializeButtons();
   setupEventListeners();
   createLocationInfo();
   updateButtonVisibility();
   
   // Update button text based on saved selection
   if (UIState.buttons.switchTowerList) {
-    UIState.buttons.switchTowerList.html(
-      UIState.currentTowerList === "test" ? "All Towers" : "Favorites"
-    );
+    UIState.buttons.switchTowerList.innerHTML = 
+      UIState.currentTowerList === "test" ? "All Towers" : "Favorites";
   }
 }
 
-// Create all buttons
-function createButtons() {
+// Initialize all buttons
+function initializeButtons() {
+  // Get all button elements
+  UIState.buttons.devMode = document.getElementById('dev-mode-button');
+  UIState.buttons.connect = document.getElementById('connect-button');
+  UIState.buttons.reset = document.getElementById('reset-button');
+  UIState.buttons.calibrate = document.getElementById('calibrate-button');
+  UIState.buttons.findTower = document.getElementById('find-tower-button');
+  UIState.buttons.switchTowerList = document.getElementById('switch-tower-button');
+  UIState.buttons.compass = document.getElementById('compass-button');
+
   // Dev Mode Toggle Button
-  UIState.buttons.devMode = createButton("Dev Mode");
-  UIState.buttons.devMode.id('dev-mode-button');
-  UIState.buttons.devMode.mousePressed(() => {
+  UIState.buttons.devMode.addEventListener('click', () => {
     UIState.isDevMode = !UIState.isDevMode;
-    // Save dev mode state to localStorage
     localStorage.setItem('isDevMode', UIState.isDevMode);
     updateButtonVisibility();
   });
 
-  // Create container for main buttons
-  const mainButtonsContainer = createDiv();
-  mainButtonsContainer.class('main-buttons-container');
-
   // Connect Button
-  UIState.buttons.connect = createButton("Connect to Arduino");
-  UIState.buttons.connect.mousePressed(() => {
+  UIState.buttons.connect.addEventListener('click', () => {
     if (window.connectToBLE) {
       window.connectToBLE();
     }
   });
-  mainButtonsContainer.child(UIState.buttons.connect);
+
+  // Reset Button
+  UIState.buttons.reset.addEventListener('click', () => {
+    if (window.resetDevice) {
+      window.resetDevice();
+    }
+  });
 
   // Calibrate Button
-  UIState.buttons.calibrate = createButton("Calibrate");
-  UIState.buttons.calibrate.id('calibrate-button');
-  UIState.buttons.calibrate.mousePressed(() => {
+  UIState.buttons.calibrate.addEventListener('click', () => {
     if (window.calibrateBLE) {
       window.calibrateBLE();
     }
   });
-  mainButtonsContainer.child(UIState.buttons.calibrate);
 
   // Find Tower Button
-  UIState.buttons.findTower = createButton(window.GPSState && window.GPSState.isRandom ? "Random Mode" : "Closest Mode");
-  UIState.buttons.findTower.id('find-tower-button');
-  UIState.buttons.findTower.mousePressed(() => {
+  UIState.buttons.findTower.addEventListener('click', () => {
     console.log("findTower button pressed");
     if (window.GPSState) {
       window.GPSState.isRandom = !window.GPSState.isRandom;
-      // Save mode preference to localStorage
       localStorage.setItem('towerMode', window.GPSState.isRandom ? 'random' : 'closest');
-      UIState.buttons.findTower.html(window.GPSState.isRandom ? "Random Mode" : "Closest Mode");
+      UIState.buttons.findTower.innerHTML = window.GPSState.isRandom ? "Random Mode" : "Closest Mode";
       
-      // Update tower selection based on new mode
       if (window.GPSState.currentLat !== 0 && window.GPSState.currentLon !== 0) {
         const closest = window.GPSState.isRandom ? 
           window.findOneRandomTower() : 
@@ -87,35 +86,31 @@ function createButtons() {
       }
     }
   });
-  mainButtonsContainer.child(UIState.buttons.findTower);
 
   // Switch Tower List Button
-  UIState.buttons.switchTowerList = createButton(UIState.currentTowerList === "test" ? "All Towers" : "Favorites");
-  UIState.buttons.switchTowerList.mousePressed(() => {
+  UIState.buttons.switchTowerList.addEventListener('click', () => {
     if (window.loadCellTowerData) {
       UIState.currentTowerList = UIState.currentTowerList === "test" ? "favorites" : "test";
-      // Save selection to localStorage
       localStorage.setItem('currentTowerList', UIState.currentTowerList);
       
       const filePath = UIState.currentTowerList === "test" ? "./test_data.json" : "./favorites.json";
       window.loadCellTowerData(() => {
-        UIState.buttons.switchTowerList.html(
-          UIState.currentTowerList === "test" ? "All Towers" : "Favorites"
-        );
+        UIState.buttons.switchTowerList.innerHTML = 
+          UIState.currentTowerList === "test" ? "All Towers" : "Favorites";
       }, filePath);
     }
   });
-  mainButtonsContainer.child(UIState.buttons.switchTowerList);
 
   // Compass Permission Button (iOS)
   if (typeof DeviceOrientationEvent.requestPermission === "function") {
-    UIState.buttons.compass = createButton("Enable Compass");
-    UIState.buttons.compass.id('compass-button');
-    UIState.buttons.compass.mousePressed(() => {
+    UIState.buttons.compass.addEventListener('click', () => {
       if (window.requestIOSPermission) {
         window.requestIOSPermission();
       }
     });
+  } else {
+    // Hide compass button if not needed
+    UIState.buttons.compass.style.display = 'none';
   }
 }
 
@@ -150,7 +145,6 @@ function updateLocationDisplay(data) {
       `Cell ID: ${tower.cell || "-"}`;
     UIState.elements.locationInfo.location.textContent = 
       `Tower Location: ${tower.lat.toFixed(6)}, ${tower.lon.toFixed(6)}`;
-    // Update debug link with OpenCellID URL
     UIState.elements.locationInfo.debug.href = 
       `https://www.opencellid.org/#zoom=18&lat=${tower.lat}&lon=${tower.lon}`;
   }
@@ -168,20 +162,24 @@ function updateLocationDisplay(data) {
 
 // Setup global event listeners
 function setupEventListeners() {
-  // Location updates
   window.onLocationUpdate = updateLocationDisplay;
   
-  // BLE connection status
   window.onBLEStatusChange = (isConnected) => {
-    UIState.buttons.calibrate.attribute("disabled", isConnected ? null : "disabled");
+    if (isConnected) {
+      UIState.buttons.calibrate.removeAttribute("disabled");
+    } else {
+      UIState.buttons.calibrate.setAttribute("disabled", "disabled");
+    }
   };
 
-  // Calibration state change
   window.onCalibrationStateChange = (canCalibrate) => {
-    canCalibrate ? UIState.buttons.calibrate.removeAttribute("disabled") : UIState.buttons.calibrate.elt.setAttribute("disabled", "disabled");
+    if (canCalibrate) {
+      UIState.buttons.calibrate.removeAttribute("disabled");
+    } else {
+      UIState.buttons.calibrate.setAttribute("disabled", "disabled");
+    }
   };
   
-  // Error handling
   window.onGPSError = (error) => {
     console.error("GPS Error:", error);
     UIState.elements.locationInfo.position.textContent = `GPS Error: ${error}`;
@@ -194,11 +192,8 @@ function setupEventListeners() {
 
 // Update button visibility based on dev mode
 function updateButtonVisibility() {
-  // Update body class for dev/user mode
   document.body.className = UIState.isDevMode ? 'dev-mode' : 'user-mode';
-  
-  // Update dev mode button text
-  UIState.buttons.devMode.html(UIState.isDevMode ? "Dev Mode" : "User Mode");
+  UIState.buttons.devMode.innerHTML = UIState.isDevMode ? "Dev Mode" : "User Mode";
 }
 
 // Export state for other modules

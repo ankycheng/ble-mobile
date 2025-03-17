@@ -34,7 +34,7 @@ function loadCellTowerData(callback, filePath = "./test_data.json") {
       
       // Update button text based on current mode
       if (window.UIState && window.UIState.buttons.findTower) {
-        window.UIState.buttons.findTower.html(GPSState.isRandom ? "Random Mode" : "Closest Mode");
+        window.UIState.buttons.findTower.innerHTML = GPSState.isRandom ? "Random Mode" : "Closest Mode";
       }
       
       // Recalculate closest tower with current position

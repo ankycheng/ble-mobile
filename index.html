@@ -30,7 +30,7 @@
   <pre id="log"></pre>
   <main>
     <div id="container"></div>
-  </main>
+  <!-- Location Info Container -->
   <div id="location-info">
     <p id="current-position">Current Position: Waiting for GPS...</p>
     <p id="tower-radio">Tower Radio Type: -</p>
@@ -39,7 +39,19 @@
     <p id="tower-distance">Distance: -</p>
     <p id="tower-angle">Angle: -</p>
     <p id="tower-debug">Debug Link: <a href="" target="_blank">View on OpenCellID</a></p>
-  </div>
+  </div>  <!-- Main Buttons Container -->
+    <div class="main-buttons-container">
+      <button id="dev-mode-button">Dev Mode</button>
+      <button id="connect-button">Connect to Arduino</button>
+      <button id="reset-button">Reset Device</button>
+      <button id="calibrate-button">Calibrate</button>
+      <button id="find-tower-button">Closest Mode</button>
+      <button id="switch-tower-button">All Towers</button>
+      <button id="compass-button">Enable Compass</button>
+    </div>
+  </main>
+  
+  
 </body>
 
 </html>

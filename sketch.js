@@ -7,7 +7,8 @@ function setup() {
   // Create canvas with responsive size
   const canvasWidth = Math.min(window.innerWidth, 1200); // Max width of 1200px
   const canvasHeight = Math.min(window.innerHeight * 0.4, 800); // 80% of window height, max 800px
-  createCanvas(canvasWidth, canvasHeight);
+  const canvas = createCanvas(canvasWidth, canvasHeight);
+  canvas.parent('container'); // Place canvas in the existing container
   
   // Initialize all components
   initializeBLE();

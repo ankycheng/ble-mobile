@@ -9,15 +9,16 @@ body {
 
 canvas {
   display: block;
-  margin: 40px auto;
+  margin: 0 auto;
 }
 
 #container {
   width: 100%;
-  height: 100%;
+  height: 40vh;
   display: flex;
   justify-content: center;
   align-items: center;
+  margin: 20px 0;
 }
 
 /* Button Container */
@@ -121,12 +122,29 @@ button:disabled {
 
 /* Hide dev mode buttons by default */
 #find-tower-button,
-#compass-button {
+#compass-button,
+#reset-button {
   display: none;
 }
 
 /* Show dev mode buttons when in dev mode */
 .dev-mode #find-tower-button,
-.dev-mode #compass-button {
+.dev-mode #compass-button,
+.dev-mode #reset-button {
   display: block;
+}
+
+#reset-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #ff4444;
+}
+
+#reset-button:hover {
+  background-color: #ff6666;
+}
+
+#reset-button:active {
+  background-color: #cc0000;
 }
