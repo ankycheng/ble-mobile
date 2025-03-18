@@ -28,6 +28,7 @@ function initializeUI() {
   setupEventListeners();
   createLocationInfo();
   updateButtonVisibility();
+  initializeConsole();
   
   // Update button text based on saved selection
   if (UIState.buttons.switchTowerList) {
@@ -247,6 +248,42 @@ function updateButtonVisibility() {
     if (!UIState.isDevMode && window.WanderMode) {
       window.WanderMode.stop();
     }
+  }
+}
+
+// Initialize console functionality
+function initializeConsole() {
+  const consoleOutput = document.getElementById('console-output');
+  const clearConsole = document.getElementById('clear-console');
+
+  // Override console.log to output to our console
+  const originalConsoleLog = console.log;
+  console.log = function(...args) {
+    // Call original console.log
+    originalConsoleLog.apply(console, args);
+    
+    // Add to our console output
+    if (consoleOutput) {
+      const message = args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg
+      ).join(' ');
+      
+      const timestamp = new Date().toLocaleTimeString();
+      const logEntry = document.createElement('div');
+      logEntry.className = 'console-entry';
+      logEntry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+      consoleOutput.appendChild(logEntry);
+      consoleOutput.scrollTop = consoleOutput.scrollHeight;
+    }
+  };
+
+  // Clear console button
+  if (clearConsole) {
+    clearConsole.addEventListener('click', () => {
+      if (consoleOutput) {
+        consoleOutput.innerHTML = '';
+      }
+    });
   }
 }
 

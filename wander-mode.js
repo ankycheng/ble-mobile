@@ -1,36 +1,36 @@
 // Wander Mode Configuration
 const WanderModeConfig = {
   VIBRATION_PATTERNS: {
-    START: 0x01,    // 單次短震動
-    WANDER: 0x02,   // 雙次短震動
-    NEAR: 0x03,     // 長震動
+    START: 0x01,    // Single short vibration
+    WANDER: 0x02,   // Double short vibration
+    NEAR: 0x03,     // Long vibration
   },
   
   TIME_RANGES: {
     START: {
-      CORRECT: { min: 15000, max: 30000 },    // 正確方向：5-10秒
-      WARNING: { min: 10000, max: 20000 },     // 偏離方向：3-5秒
-      WRONG: { min: 8000, max: 10000 }        // 錯誤方向：1-3秒
+      CORRECT: { min: 15000, max: 30000 },    // Correct direction: 5-10 seconds
+      WARNING: { min: 10000, max: 20000 },     // Off-course direction: 3-5 seconds
+      WRONG: { min: 8000, max: 10000 }        // Wrong direction: 1-3 seconds
     },
     WANDER: {
-      CORRECT: { min: 60000, max: 120000 },  // 正確方向：1-2分鐘
-      WARNING: { min: 30000, max: 60000 },   // 偏離方向：30秒-1分鐘
-      WRONG: { min: 15000, max: 30000 }      // 錯誤方向：15-30秒
+      CORRECT: { min: 60000, max: 120000 },  // Correct direction: 1-2 minutes
+      WARNING: { min: 30000, max: 60000 },   // Off-course direction: 30 seconds-1 minute
+      WRONG: { min: 15000, max: 30000 }      // Wrong direction: 15-30 seconds
     },
     NEAR: {
-      CORRECT: { min: 2000, max: 4000 },     // 正確方向：2-4秒
-      WARNING: { min: 1000, max: 2000 },     // 偏離方向：1-2秒
-      WRONG: { min: 500, max: 1000 }         // 錯誤方向：0.5-1秒
+      CORRECT: { min: 2000, max: 4000 },     // Correct direction: 2-4 seconds
+      WARNING: { min: 1000, max: 2000 },     // Off-course direction: 1-2 seconds
+      WRONG: { min: 500, max: 1000 }         // Wrong direction: 0.5-1 second
     }
   },
 
   DIRECTION_THRESHOLDS: {
-    CORRECT: 45,    // 正確方向的角度範圍（±45度）
-    WARNING: 90,    // 警告方向的角度範圍（±90度）
+    CORRECT: 45,    // Angle range for correct direction (±45 degrees)
+    WARNING: 90,    // Angle range for warning direction (±90 degrees)
   },
 
-  NEAR_THRESHOLD: 50,  // 50公尺內視為接近
-  MAX_OFFSET: 20,      // 最大隨機偏差值（公尺）
+  NEAR_THRESHOLD: 50,  // Considered near when within 50 meters
+  MAX_OFFSET: 20,      // Maximum random offset value (meters)
 };
 
 // Wander Mode State
@@ -112,7 +112,7 @@ function updatePhase(distance) {
     WanderModeState.currentPhase = 'wander';
   }
 
-  // 如果階段改變，重新安排震動
+  // If phase changes, reschedule vibration
   if (oldPhase !== WanderModeState.currentPhase) {
     scheduleNextVibration();
   }
@@ -121,18 +121,18 @@ function updatePhase(distance) {
 function scheduleNextVibration() {
   if (!WanderModeState.isActive) return;
 
-  // 清除現有的timer
+  // Clear existing timer
   if (WanderModeState.timer) {
     clearTimeout(WanderModeState.timer);
   }
 
-  // 取得當前方向狀態
+  // Get current direction status
   const directionStatus = getDirectionStatus(
     CompassState.heading,
     CompassState.angleToTower
   );
 
-  // 計算下次震動時間
+  // Calculate next vibration time
   const interval = getRandomInterval(WanderModeState.currentPhase, directionStatus);
   
   WanderModeState.timer = setTimeout(() => {
@@ -151,7 +151,7 @@ function checkAndVibrate() {
     CompassState.angleToTower
   );
 
-  // 根據不同階段和方向狀態選擇震動模式
+  // Select vibration pattern based on different phases and direction status
   let pattern;
   switch (WanderModeState.currentPhase) {
     case 'near':
@@ -165,7 +165,7 @@ function checkAndVibrate() {
       break;
   }
 
-  // 發送震動
+  // Send vibration
   if (window.BLEState && window.BLEState.distanceCharacteristic) {
     console.log('Sending vibration:', pattern);
     const bufferToSend = Uint8Array.of(pattern);
@@ -175,7 +175,7 @@ function checkAndVibrate() {
 
   WanderModeState.lastVibrationTime = Date.now();
 
-  // 記錄軌跡點
+  // Record trajectory point
   WanderModeState.userTrajectory.push({
     timestamp: Date.now(),
     position: {
