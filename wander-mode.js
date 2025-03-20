@@ -80,11 +80,11 @@ function startWanderMode() {
   scheduleNextVibration();
   
   // Update button state
-  const wanderButton = document.getElementById('wander-mode-button');
-  if (wanderButton) {
-    wanderButton.classList.add('active');
-    wanderButton.textContent = 'Wander Mode On';
-  }
+  // const wanderButton = document.getElementById('wander-mode-button');
+  // if (wanderButton) {
+  //   wanderButton.classList.add('active');
+  //   wanderButton.textContent = 'Wander Mode On';
+  // }
 }
 
 function stopWanderMode() {

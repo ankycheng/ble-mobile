@@ -2,7 +2,7 @@ self.addEventListener("install", function (e) {
   console.log("[Service Worker] Install");
 });
 
-var cacheName = "v1.04";
+var cacheName = "v1.06";
 var appShellFiles = [
   "./ble-handler.js",
   "./compass.js",

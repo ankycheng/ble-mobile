@@ -126,9 +126,9 @@ function updatePosition(position) {
     }
 
     // Update wander mode phase if active
-    if (window.WanderMode) {
-      window.WanderMode.updatePhase(parseFloat(distance));
-    }
+    // if (window.WanderMode) {
+    //   window.WanderMode.updatePhase(parseFloat(distance));
+    // }
   }
 }
 

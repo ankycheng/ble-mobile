@@ -34,6 +34,8 @@ function connectToBLE() {
 function gotCharacteristics(error, characteristics) {
   if (error) {
     console.log("error: ", error);
+    alert("Failed to connect to Arduino. Please check if the device is turned on and in range.");
+    BLEState.isConnected = false;
     return;
   }
 
@@ -49,19 +51,45 @@ function gotCharacteristics(error, characteristics) {
     (c) => c.uuid === BLEConfig.resetCharacteristicUUID
   );
 
+  if (!BLEState.calibrationCharacteristic || !BLEState.distanceCharacteristic || !BLEState.resetCharacteristic) {
+    alert("Failed to find required BLE characteristics. Please check if the Arduino is properly configured.");
+    BLEState.isConnected = false;
+    return;
+  }
+
   BLEState.isConnected = true;
+  console.log("BLE connected");
+  alert("BLE connected");
 
   // setInterval(() => updateBLEDistance(true), 5000);
 }
 
 // Calibrate the BLE device and send the angle to the device
 function calibrateBLE() {
-  if (BLEState.calibrationCharacteristic) {
-    sendAngleToBLE(CompassState.angleToTower);
+  if (!BLEState.isConnected) {
+    alert("Not connected to Arduino. Please connect first.");
+    return;
   }
+
+  if (!BLEState.calibrationCharacteristic) {
+    alert("Calibration characteristic not available. Please reconnect to Arduino.");
+    return;
+  }
+
+  if (typeof CompassState === 'undefined' || typeof CompassState.angleToTower === 'undefined') {
+    alert("Compass data not available. Please ensure compass is enabled and calibrated.");
+    return;
+  }
+
+  sendAngleToBLE(CompassState.angleToTower);
 }
 
 function sendAngleToBLE(angle) {
+  if (!BLEState.isConnected) {
+    alert("Not connected to Arduino. Please connect first.");
+    return;
+  }
+
   angle = Math.round(angle);
   // Create an ArrayBuffer of 2 bytes.
   let buffer = new ArrayBuffer(2);
@@ -69,28 +97,51 @@ function sendAngleToBLE(angle) {
   view.setUint16(0, angle, true);
   // Cannot use BLEState.myBLE.write as p5.ble can only send strings or 8bit data
   console.log("write angle to ble: ", angle);
-  BLEState.calibrationCharacteristic.writeValue(buffer);
+  BLEState.calibrationCharacteristic.writeValue(buffer).catch(error => {
+    console.error("Error sending angle:", error);
+    alert("Failed to send angle to Arduino. Please check the connection.");
+    BLEState.isConnected = false;
+  });
 }
 
 function updateBLEDistance(isNearTower) {
+  if (!BLEState.isConnected) {
+    console.log("Not connected to Arduino");
+    return;
+  }
+
   if (BLEState.distanceCharacteristic) {
     BLEState.myBLE.write(
       BLEState.distanceCharacteristic,
       isNearTower ? "1" : "0"
-    );
+    ).catch(error => {
+      console.error("Error updating distance:", error);
+      alert("Failed to update distance on Arduino. Please check the connection.");
+      BLEState.isConnected = false;
+    });
   }
 }
 
 function resetDevice() {
-  if (BLEState.resetCharacteristic && BLEState.isConnected) {
+  if (!BLEState.isConnected) {
+    alert("Not connected to Arduino. Please connect first.");
+    return;
+  }
+
+  if (BLEState.resetCharacteristic) {
     console.log("Sending reset signal to device");
     // Send a single byte (1) to trigger reset
     let buffer = new ArrayBuffer(1);
     let view = new DataView(buffer);
     view.setUint8(0, 1);
-    BLEState.resetCharacteristic.writeValue(buffer);
+    BLEState.resetCharacteristic.writeValue(buffer).catch(error => {
+      console.error("Error resetting device:", error);
+      alert("Failed to reset Arduino. Please check the connection.");
+      BLEState.isConnected = false;
+    });
   } else {
     console.log("Device not connected or reset characteristic not available");
+    alert("Reset characteristic not available. Please reconnect to Arduino.");
   }
 }
 

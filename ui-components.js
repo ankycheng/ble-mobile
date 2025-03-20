@@ -8,7 +8,8 @@ const UIState = {
     findTower: null,
     switchTowerList: null,
     compass: null,
-    wanderMode: null,  // New button for wander mode
+    setHeading: null,
+    // wanderMode: null,  // New button for wander mode
   },
   elements: {
     locationInfo: {
@@ -47,7 +48,8 @@ function initializeButtons() {
   UIState.buttons.findTower = document.getElementById('find-tower-button');
   UIState.buttons.switchTowerList = document.getElementById('switch-tower-button');
   UIState.buttons.compass = document.getElementById('compass-button');
-  UIState.buttons.wanderMode = document.getElementById('wander-mode-button');
+  UIState.buttons.setHeading = document.getElementById('set-heading-button');
+  // UIState.buttons.wanderMode = document.getElementById('wander-mode-button');
 
   // Dev Mode Toggle Button
   UIState.buttons.devMode.addEventListener('click', () => {
@@ -75,9 +77,9 @@ function initializeButtons() {
     if (window.calibrateBLE) {
       window.calibrateBLE();
       // Start wander mode after calibration only in dev mode
-      if (window.WanderMode && UIState.isDevMode) {
-        window.WanderMode.start();
-      }
+      // if (window.WanderMode && UIState.isDevMode) {
+      //   window.WanderMode.start();
+      // }
     }
   });
 
@@ -135,29 +137,38 @@ function initializeButtons() {
     UIState.buttons.compass.style.display = 'none';
   }
 
-  // Wander Mode Button
-  UIState.buttons.wanderMode.addEventListener('click', () => {
-    const button = UIState.buttons.wanderMode;
-    const isActive = button.classList.contains('active');
-    
-    if (isActive) {
-      // Stop wander mode
-      if (window.WanderMode) {
-        window.WanderMode.stop();
-      }
+  // Set Heading Button
+  UIState.buttons.setHeading.addEventListener('click', () => {
+    if (window.CompassState && window.GPSState && window.GPSState.closestTower) {
+      window.calibrateBLE();
     } else {
-      // Start wander mode
-      if (window.WanderMode) {
-        window.WanderMode.start();
-      }
+      console.log("Compass or GPS state not available");
     }
   });
 
-  // Initialize wander mode button state
-  if (window.WanderMode && WanderModeState.isActive) {
-    UIState.buttons.wanderMode.classList.add('active');
-    UIState.buttons.wanderMode.textContent = 'Wander Mode On';
-  }
+  // // Wander Mode Button
+  // UIState.buttons.wanderMode.addEventListener('click', () => {
+  //   const button = UIState.buttons.wanderMode;
+  //   const isActive = button.classList.contains('active');
+    
+  //   if (isActive) {
+  //     // Stop wander mode
+  //     if (window.WanderMode) {
+  //       window.WanderMode.stop();
+  //     }
+  //   } else {
+  //     // Start wander mode
+  //     if (window.WanderMode) {
+  //       window.WanderMode.start();
+  //     }
+  //   }
+  // });
+
+  // // Initialize wander mode button state
+  // if (window.WanderMode && WanderModeState.isActive) {
+  //   UIState.buttons.wanderMode.classList.add('active');
+  //   UIState.buttons.wanderMode.textContent = 'Wander Mode On';
+  // }
 }
 
 // Create location info elements
@@ -241,14 +252,19 @@ function updateButtonVisibility() {
   document.body.className = UIState.isDevMode ? 'dev-mode' : 'user-mode';
   UIState.buttons.devMode.innerHTML = UIState.isDevMode ? "Dev Mode" : "User Mode";
   
-  // Hide/show wander mode button based on dev mode
-  if (UIState.buttons.wanderMode) {
-    UIState.buttons.wanderMode.style.display = UIState.isDevMode ? 'block' : 'none';
-    // If switching to user mode, make sure to stop wander mode
-    if (!UIState.isDevMode && window.WanderMode) {
-      window.WanderMode.stop();
-    }
+  // Set heading button should only be visible in dev mode
+  if (UIState.buttons.setHeading) {
+    UIState.buttons.setHeading.style.display = UIState.isDevMode ? 'block' : 'none';
   }
+  
+  // Hide/show wander mode button based on dev mode
+  // if (UIState.buttons.wanderMode) {
+  //   UIState.buttons.wanderMode.style.display = UIState.isDevMode ? 'block' : 'none';
+  //   // If switching to user mode, make sure to stop wander mode
+  //   if (!UIState.isDevMode && window.WanderMode) {
+  //     window.WanderMode.stop();
+  //   }
+  // }
 }
 
 // Initialize console functionality
