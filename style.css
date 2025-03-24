@@ -203,3 +203,24 @@ button:disabled {
 #clear-console:hover {
   background-color: #5a5a5a;
 }
+
+/* Cache Info Styles */
+#cache-info {
+  display: none;
+  margin: 15px auto;
+  padding: 15px;
+  width: 90%;
+  max-width: 1200px;
+  border-radius: 8px;
+}
+
+#cache-info p {
+  margin: 8px 0;
+  font-size: 0.9rem;
+  color: #333;
+  text-align: center;
+}
+
+.dev-mode #cache-info {
+  display: block;
+}

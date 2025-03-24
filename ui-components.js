@@ -17,6 +17,10 @@ const UIState = {
       tower: null,
       distance: null,
       angle: null
+    },
+    cacheInfo: {
+      name: null,
+      lastCommit: null
     }
   },
   isDevMode: localStorage.getItem('isDevMode') === 'true',
@@ -182,6 +186,11 @@ function createLocationInfo() {
     angle: document.getElementById("tower-angle"),
     debug: document.getElementById("tower-debug").querySelector('a')
   };
+
+  UIState.elements.cacheInfo = {
+    name: document.getElementById("cache-name"),
+    lastCommit: document.getElementById("last-commit-time")
+  };
 }
 
 // Update location display
@@ -257,14 +266,28 @@ function updateButtonVisibility() {
     UIState.buttons.setHeading.style.display = UIState.isDevMode ? 'block' : 'none';
   }
   
-  // Hide/show wander mode button based on dev mode
-  // if (UIState.buttons.wanderMode) {
-  //   UIState.buttons.wanderMode.style.display = UIState.isDevMode ? 'block' : 'none';
-  //   // If switching to user mode, make sure to stop wander mode
-  //   if (!UIState.isDevMode && window.WanderMode) {
-  //     window.WanderMode.stop();
-  //   }
-  // }
+  // Show/hide cache info based on dev mode
+  const cacheInfoContainer = document.getElementById('cache-info');
+  if (cacheInfoContainer) {
+    if (UIState.isDevMode) {
+      cacheInfoContainer.style.display = 'block';
+      // Fetch and update cache info
+      fetch('manifest.json')
+        .then(response => response.json())
+        .then(data => {
+          if (UIState.elements.cacheInfo.name) {
+            UIState.elements.cacheInfo.name.textContent = `Cache Version: ${data.cacheName}`;
+          }
+          if (UIState.elements.cacheInfo.lastCommit) {
+            const date = new Date(data.lastCommitTime);
+            UIState.elements.cacheInfo.lastCommit.textContent = `Last Commit: ${date.toLocaleString()}`;
+          }
+        })
+        .catch(error => console.error('Error fetching manifest:', error));
+    } else {
+      cacheInfoContainer.style.display = 'none';
+    }
+  }
 }
 
 // Initialize console functionality
