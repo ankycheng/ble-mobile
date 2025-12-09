@@ -3,8 +3,10 @@ body {
   margin: 0;
   padding: 0;
   width: 100vw;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 canvas {
@@ -13,7 +15,9 @@ canvas {
 }
 
 main {
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 #container {

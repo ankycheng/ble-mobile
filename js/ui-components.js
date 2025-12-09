@@ -24,7 +24,8 @@ const UIState = {
     }
   },
   isDevMode: localStorage.getItem('isDevMode') === 'true',
-  currentTowerList: localStorage.getItem('currentTowerList') || "test" // "test" or "favorites"
+  currentTowerList: localStorage.getItem('currentTowerList') || "test", // "test" or "favorites"
+  handlers: {} // Store event handlers to prevent duplicates
 };
 
 // Initialize UI components
@@ -55,29 +56,58 @@ function initializeButtons() {
   UIState.buttons.setHeading = document.getElementById('set-heading-button');
   // UIState.buttons.wanderMode = document.getElementById('wander-mode-button');
 
+  // Remove existing event listeners if they exist
+  if (UIState.handlers.devMode && UIState.buttons.devMode) {
+    UIState.buttons.devMode.removeEventListener('click', UIState.handlers.devMode);
+  }
+  if (UIState.handlers.connect && UIState.buttons.connect) {
+    UIState.buttons.connect.removeEventListener('click', UIState.handlers.connect);
+  }
+  if (UIState.handlers.reset && UIState.buttons.reset) {
+    UIState.buttons.reset.removeEventListener('click', UIState.handlers.reset);
+  }
+  if (UIState.handlers.calibrate && UIState.buttons.calibrate) {
+    UIState.buttons.calibrate.removeEventListener('click', UIState.handlers.calibrate);
+  }
+  if (UIState.handlers.findTower && UIState.buttons.findTower) {
+    UIState.buttons.findTower.removeEventListener('click', UIState.handlers.findTower);
+  }
+  if (UIState.handlers.switchTowerList && UIState.buttons.switchTowerList) {
+    UIState.buttons.switchTowerList.removeEventListener('click', UIState.handlers.switchTowerList);
+  }
+  if (UIState.handlers.compass && UIState.buttons.compass) {
+    UIState.buttons.compass.removeEventListener('click', UIState.handlers.compass);
+  }
+  if (UIState.handlers.setHeading && UIState.buttons.setHeading) {
+    UIState.buttons.setHeading.removeEventListener('click', UIState.handlers.setHeading);
+  }
+
   // Dev Mode Toggle Button
-  UIState.buttons.devMode.addEventListener('click', () => {
+  UIState.handlers.devMode = () => {
     UIState.isDevMode = !UIState.isDevMode;
     localStorage.setItem('isDevMode', UIState.isDevMode);
     updateButtonVisibility();
-  });
+  };
+  UIState.buttons.devMode.addEventListener('click', UIState.handlers.devMode);
 
   // Connect Button
-  UIState.buttons.connect.addEventListener('click', () => {
+  UIState.handlers.connect = () => {
     if (window.connectToBLE) {
       window.connectToBLE();
     }
-  });
+  };
+  UIState.buttons.connect.addEventListener('click', UIState.handlers.connect);
 
   // Reset Button
-  UIState.buttons.reset.addEventListener('click', () => {
+  UIState.handlers.reset = () => {
     if (window.resetDevice) {
       window.resetDevice();
     }
-  });
+  };
+  UIState.buttons.reset.addEventListener('click', UIState.handlers.reset);
 
   // Calibrate Button
-  UIState.buttons.calibrate.addEventListener('click', () => {
+  UIState.handlers.calibrate = () => {
     if (window.calibrateBLE) {
       window.calibrateBLE();
       // Start wander mode after calibration only in dev mode
@@ -85,10 +115,11 @@ function initializeButtons() {
       //   window.WanderMode.start();
       // }
     }
-  });
+  };
+  UIState.buttons.calibrate.addEventListener('click', UIState.handlers.calibrate);
 
   // Find Tower Button
-  UIState.buttons.findTower.addEventListener('click', () => {
+  UIState.handlers.findTower = () => {
     console.log("findTower button pressed");
     if (window.GPSState) {
       window.GPSState.isRandom = !window.GPSState.isRandom;
@@ -113,10 +144,11 @@ function initializeButtons() {
         }
       }
     }
-  });
+  };
+  UIState.buttons.findTower.addEventListener('click', UIState.handlers.findTower);
 
   // Switch Tower List Button
-  UIState.buttons.switchTowerList.addEventListener('click', () => {
+  UIState.handlers.switchTowerList = () => {
     if (window.loadCellTowerData) {
       UIState.currentTowerList = UIState.currentTowerList === "test" ? "favorites" : "test";
       localStorage.setItem('currentTowerList', UIState.currentTowerList);
@@ -127,28 +159,34 @@ function initializeButtons() {
           UIState.currentTowerList === "test" ? "All Towers" : "Favorites";
       }, filePath);
     }
-  });
+  };
+  UIState.buttons.switchTowerList.addEventListener('click', UIState.handlers.switchTowerList);
 
   // Compass Permission Button (iOS)
   if (typeof DeviceOrientationEvent.requestPermission === "function") {
-    UIState.buttons.compass.addEventListener('click', () => {
+    if (UIState.handlers.compass && UIState.buttons.compass) {
+      UIState.buttons.compass.removeEventListener('click', UIState.handlers.compass);
+    }
+    UIState.handlers.compass = () => {
       if (window.requestIOSPermission) {
         window.requestIOSPermission();
       }
-    });
+    };
+    UIState.buttons.compass.addEventListener('click', UIState.handlers.compass);
   } else {
     // Hide compass button if not needed
     UIState.buttons.compass.style.display = 'none';
   }
 
   // Set Heading Button
-  UIState.buttons.setHeading.addEventListener('click', () => {
+  UIState.handlers.setHeading = () => {
     if (window.CompassState && window.GPSState && window.GPSState.closestTower) {
       window.calibrateBLE();
     } else {
       console.log("Compass or GPS state not available");
     }
-  });
+  };
+  UIState.buttons.setHeading.addEventListener('click', UIState.handlers.setHeading);
 
   // // Wander Mode Button
   // UIState.buttons.wanderMode.addEventListener('click', () => {
