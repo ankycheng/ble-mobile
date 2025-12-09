@@ -121,7 +121,7 @@ function initializeButtons() {
       UIState.currentTowerList = UIState.currentTowerList === "test" ? "favorites" : "test";
       localStorage.setItem('currentTowerList', UIState.currentTowerList);
       
-      const filePath = UIState.currentTowerList === "test" ? "./test_data.json" : "./favorites.json";
+      const filePath = UIState.currentTowerList === "test" ? "./data/test_data.json" : "./data/favorites.json";
       window.loadCellTowerData(() => {
         UIState.buttons.switchTowerList.innerHTML = 
           UIState.currentTowerList === "test" ? "All Towers" : "Favorites";

@@ -7,20 +7,20 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" type="text/css" href="style.css">
+  <link rel="stylesheet" type="text/css" href="css/style.css">
   <!-- Core Libraries -->
-  <script src="p5.js"></script>
-  <script src="p5.ble.js"></script>
+  <script src="libs/p5.js"></script>
+  <script src="libs/p5.ble.js"></script>
   
   <!-- Utility and Handler Scripts -->
-  <script src="utils.js"></script>
-  <script src="ble-handler.js"></script>
-  <script src="gps-handler.js"></script>
-  <script src="compass.js"></script>
-  <script src="ui-components.js"></script>
-  <!-- <script src="wander-mode.js"></script> -->
+  <script src="js/utils.js"></script>
+  <script src="js/ble-handler.js"></script>
+  <script src="js/gps-handler.js"></script>
+  <script src="js/compass.js"></script>
+  <script src="js/ui-components.js"></script>
+  <!-- <script src="js/wander-mode.js"></script> -->
   <!-- Main Application Script -->
-  <script src="sketch.js"></script>
+  <script src="js/sketch.js"></script>
   <script>
     if('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js')

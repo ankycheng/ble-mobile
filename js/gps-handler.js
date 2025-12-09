@@ -25,7 +25,7 @@ const GPSConfig = {
 let gpsRetryCount = 0;
 
 // Load cell tower data
-function loadCellTowerData(callback, filePath = "./test_data.json") {
+function loadCellTowerData(callback, filePath = "./data/test_data.json") {
   fetch(filePath)
     .then(response => response.json())
     .then(data => {

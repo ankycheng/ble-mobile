@@ -7,19 +7,29 @@ A web-based application for tracking and interacting with cell towers using BLE 
 ```
 .
 ├── index.html          # Main application entry point
-├── style.css          # Application styling
-├── sketch.js          # Main p5.js application logic
-├── ble-handler.js     # BLE communication handling
-├── gps-handler.js     # GPS functionality
-├── compass.js         # Compass and orientation features
-├── ui-components.js   # UI element definitions
-├── wander-mode.js     # Wander mode functionality
-├── utils.js           # Utility functions
-├── wake-lock.js       # Screen wake lock functionality
-├── favorites.json     # User's favorite tower locations
-├── newyork.json      # New York tower database
-├── phoenix.json      # Phoenix tower database
-└── icons/            # Application icons
+├── manifest.json       # PWA manifest
+├── sw.js              # Service worker for offline support
+├── serve.py           # Development server
+├── css/
+│   └── style.css      # Application styling
+├── js/
+│   ├── sketch.js      # Main p5.js application logic
+│   ├── ble-handler.js # BLE communication handling
+│   ├── gps-handler.js # GPS functionality
+│   ├── compass.js     # Compass and orientation features
+│   ├── ui-components.js # UI element definitions
+│   ├── wander-mode.js # Wander mode functionality
+│   ├── utils.js       # Utility functions
+│   └── wake-lock.js   # Screen wake lock functionality
+├── libs/
+│   ├── p5.js          # p5.js library
+│   └── p5.ble.js      # p5.ble.js library
+├── data/
+│   ├── favorites.json # User's favorite tower locations
+│   ├── newyork.json   # New York tower database
+│   ├── phoenix.json   # Phoenix tower database
+│   └── test_data.json # Test data for development
+└── icons/             # Application icons
 ```
 
 ## Key Features
@@ -50,8 +60,8 @@ The application provides several UI controls accessible through buttons:
 ### File Paths and Data Sources
 
 1. **Tower Databases**:
-   - `newyork.json`: Contains tower data for New York area
-   - `phoenix.json`: Contains tower data for Phoenix area
+   - `data/newyork.json`: Contains tower data for New York area
+   - `data/phoenix.json`: Contains tower data for Phoenix area
    - Format:
      ```json
      {
@@ -67,7 +77,7 @@ The application provides several UI controls accessible through buttons:
      ```
 
 2. **Favorites List**:
-   - Located in `favorites.json`
+   - Located in `data/favorites.json`
    - Structure:
      ```json
      {
@@ -97,7 +107,7 @@ The application shows real-time information about:
 ## Development and Testing
 
 1. Use Dev Mode for testing and debugging
-2. The application includes test data in `test_data.json`
+2. The application includes test data in `data/test_data.json`
 3. Service worker implementation is available in `sw.js` for offline capabilities
 
 ## Dependencies
@@ -111,4 +121,4 @@ The application shows real-time information about:
 - The application requires GPS and Bluetooth permissions
 - Compass calibration may be needed for accurate readings
 - Different modes (Closest, All Towers, Wander) affect how towers are displayed and tracked
-- Favorite towers can be managed through the favorites.json file
+- Favorite towers can be managed through the `data/favorites.json` file

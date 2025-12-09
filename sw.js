@@ -1,18 +1,18 @@
 var cacheName = "v1.07";
 var appShellFiles = [
-  "./ble-handler.js",
-  "./compass.js",
-  "./gps-handler.js",
+  "./js/ble-handler.js",
+  "./js/compass.js",
+  "./js/gps-handler.js",
   "./index.html",
   "./keep-alive.txt",
   "./manifest.json",
-  "./p5.js",
-  "./p5.ble.js",
-  "./sketch.js",
-  "./style.css",
-  "./test_data.json",
-  "./ui-components.js",
-  "./utils.js",
+  "./libs/p5.js",
+  "./libs/p5.ble.js",
+  "./js/sketch.js",
+  "./css/style.css",
+  "./data/test_data.json",
+  "./js/ui-components.js",
+  "./js/utils.js",
 ];
 
 self.addEventListener("install", function (e) {
