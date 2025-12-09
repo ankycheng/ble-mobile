@@ -1,13 +1,10 @@
-self.addEventListener("install", function (e) {
-  console.log("[Service Worker] Install");
-});
-
 var cacheName = "v1.07";
 var appShellFiles = [
   "./ble-handler.js",
   "./compass.js",
   "./gps-handler.js",
   "./index.html",
+  "./keep-alive.txt",
   "./manifest.json",
   "./p5.js",
   "./p5.ble.js",
@@ -24,6 +21,23 @@ self.addEventListener("install", function (e) {
     caches.open(cacheName).then(function (cache) {
       console.log("[Service Worker] Caching all: app shell and content");
       return cache.addAll(appShellFiles);
+    })
+  );
+});
+
+// Clean up old caches when new service worker activates
+self.addEventListener("activate", function (e) {
+  console.log("[Service Worker] Activate");
+  e.waitUntil(
+    caches.keys().then(function (keyList) {
+      return Promise.all(
+        keyList.map(function (key) {
+          if (key !== cacheName) {
+            console.log("[Service Worker] Removing old cache:", key);
+            return caches.delete(key);
+          }
+        })
+      );
     })
   );
 });

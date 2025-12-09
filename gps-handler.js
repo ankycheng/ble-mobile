@@ -21,6 +21,9 @@ const GPSConfig = {
   retryDelay: 1000
 };
 
+ // Separate retry counter (don't modify config directly)
+let gpsRetryCount = 0;
+
 // Load cell tower data
 function loadCellTowerData(callback, filePath = "./test_data.json") {
   fetch(filePath)
@@ -183,13 +186,16 @@ function handleGPSError(error) {
   console.error("GPS Error:", errorMessages[error.code] || errorMessages[0]);
   
   // Add retry logic for timeout errors
-  if (error.code === 3 && GPSConfig.maxRetries > 0) {
-    console.log(`Retrying GPS location in ${GPSConfig.retryDelay}ms. Attempts remaining: ${GPSConfig.maxRetries}`);
-    GPSConfig.maxRetries--;
+  if (error.code === 3 && gpsRetryCount < GPSConfig.maxRetries) {
+    gpsRetryCount++;
+    console.log(`Retrying GPS location in ${GPSConfig.retryDelay}ms. Attempt ${gpsRetryCount}/${GPSConfig.maxRetries}`);
     
     setTimeout(() => {
       navigator.geolocation.getCurrentPosition(
-        updatePosition,
+        (position) => {
+          gpsRetryCount = 0; // Reset counter on success
+          updatePosition(position);
+        },
         handleGPSError,
         GPSConfig.options
       );
@@ -197,6 +203,9 @@ function handleGPSError(error) {
     
     return;
   }
+  
+  // Reset counter when max retries reached or different error
+  gpsRetryCount = 0;
 
   if (window.onGPSError) {
     window.onGPSError(errorMessages[error.code] || errorMessages[0]);

@@ -12,10 +12,23 @@ const CompassState = {
   angleToTower: 0,
 };
 
+// Throttle configuration for compass events (60Hz -> ~15Hz)
+const COMPASS_THROTTLE_MS = 66;
+let lastCompassUpdate = 0;
+
 function initializeCompass() {
   if (isIOS) {
-    alert("not supported on iOS");
+    // iOS requires permission request via user gesture
+    if (typeof DeviceOrientationEvent.requestPermission === "function") {
+      return { needsPermission: true };
+    } else {
+      // Older iOS that doesn't need permission
+      window.addEventListener("deviceorientation", handleOrientation, true);
+      CompassState.isEnabled = true;
+      return { needsPermission: false };
+    }
   } else {
+    // Android and other devices
     window.addEventListener(
       "deviceorientationabsolute",
       handleOrientation,
@@ -25,6 +38,29 @@ function initializeCompass() {
     return { needsPermission: false };
   }
 }
+
+// Request iOS permission (must be called from user gesture)
+function requestIOSPermission() {
+  if (typeof DeviceOrientationEvent.requestPermission === "function") {
+    DeviceOrientationEvent.requestPermission()
+      .then((response) => {
+        if (response === "granted") {
+          window.addEventListener("deviceorientation", handleOrientation, true);
+          CompassState.isEnabled = true;
+          console.log("iOS compass permission granted");
+        } else {
+          console.log("iOS compass permission denied");
+          alert("Compass permission denied. Please enable it in Settings.");
+        }
+      })
+      .catch((error) => {
+        console.error("Error requesting compass permission:", error);
+      });
+  }
+}
+
+// Export for global access
+window.requestIOSPermission = requestIOSPermission;
 
 // Disable compass
 function disableCompass() {
@@ -40,6 +76,13 @@ function disableCompass() {
 // Handle orientation updates
 // https://dev.to/orkhanjafarovr/real-compass-on-mobile-browsers-with-javascript-3emi
 function handleOrientation(event) {
+  // Throttle updates for performance
+  const now = Date.now();
+  if (now - lastCompassUpdate < COMPASS_THROTTLE_MS) {
+    return;
+  }
+  lastCompassUpdate = now;
+
   // iOS devices
   if (event.webkitCompassHeading) {
     CompassState.heading = event.webkitCompassHeading;
