@@ -35,14 +35,8 @@ float diffAngle = 15.0;
 // Instead of pointing exactly at target, we add a random offset
 // This makes the "correct" direction drift, creating a meandering path
 bool isHeadingShiftEnabled = true;
-float headingShiftRange = 45.0;     // Normal offset range: -45° to +45°
+float headingShiftRange = 150.0;     // Normal offset range: -150° to +150°
 float headingShiftAmount = 0.0;     // Current offset, regenerated after each vibration
-
-// Wrong direction offset: sometimes point to completely wrong direction
-// This prevents users from easily figuring out the true target direction
-const int PROB_WRONG_DIRECTION = 40;      // 40% chance to use wrong direction offset
-const int WRONG_OFFSET_MIN = 120;         // Minimum wrong offset (degrees)
-const int WRONG_OFFSET_MAX = 180;         // Maximum wrong offset (degrees)
 
 // Timer control variables
 // To set a timer beween available vibrations
@@ -52,16 +46,24 @@ unsigned long randomInterval = 0;
 const unsigned long MIN_INTERVAL = 10000;   // Minimum interval between vibration checks (ms)
 const unsigned long MAX_INTERVAL = 30000;   // Maximum interval between vibration checks (ms)
 
-// ===== Vibration trigger settings =====
-// Two-phase vibration logic:
-// Phase 1: When timer fires, there's a chance to vibrate regardless of direction
-// Phase 2: If phase 1 didn't trigger, wait for user to face correct direction
-
-// Probability to vibrate regardless of direction when timer fires
-const int PROB_UNCONDITIONAL = 30;  // 30% chance to vibrate no matter what
-
 // State tracking for "waiting for correct direction" mode
 bool isWaitingForCorrectDirection = false;
+
+// ===== Target persistence settings =====
+// Each target direction requires multiple vibrations before generating a new one
+int vibrationCountForCurrentTarget = 0;       // How many times current target has been reached
+const int VIBRATIONS_PER_TARGET = 2;          // Vibrations needed before new target
+bool isFirstTarget = true;                    // First target is fully random (0-360°)
+
+// ===== Leave-and-return detection =====
+// After first vibration, user must leave target zone before second vibration can trigger
+bool hasLeftTarget = false;                   // Has user left the target zone after first vibration?
+float LEAVE_ANGLE_THRESHOLD = 60.0;           // Must turn away this many degrees to count as "left"
+bool isWaitingForReturn = false;              // State: waiting for user to return after leaving
+
+// ===== New target generation settings =====
+float MIN_ANGLE_DIFFERENCE = 60.0;            // New target must differ from old by at least this much
+float previousHeadingShift = 0.0;             // Store previous shift for comparison
 
 // Pattern definitions
 #define PATTERN_NONE -1
@@ -348,45 +350,91 @@ void loop() {
     digitalWrite(LED_BUILTIN, HIGH);  // LED OFF when wrong
   }
 
-  // Two-phase vibration trigger logic
-  // Phase 1: Timer fires -> 30% unconditional vibration
-  // Phase 2: If no vibration, wait for user to face correct direction
+  // ===== Vibration trigger logic =====
+  // Flow: Timer -> Wait for target -> Vibrate #1 -> Wait to leave -> Wait to return -> Vibrate #2 -> New target
   
   if (isTimerEnabled) {
     bool timerFired = (millis() - lastVibrationTime >= randomInterval);
     
-    // Phase 1: Timer just fired
-    if (timerFired && !isWaitingForCorrectDirection) {
-      if (random(0, 100) < PROB_UNCONDITIONAL) {
-        // Unconditional vibration triggered
-        vibrationCtrl.startPattern(0x02);
-        Serial.println("Unconditional vibrate!");
-        
-        // Reset timer and generate new random values
+    // STATE 1: Timer fired, waiting for user to face target (first vibration)
+    if (timerFired && !isWaitingForCorrectDirection && !isWaitingForReturn) {
+      // Enter waiting state for correct direction
+      isWaitingForCorrectDirection = true;
+      Serial.println("Timer fired! Waiting for correct direction...");
+    }
+    
+    // STATE 2: Waiting for first vibration (user faces target)
+    if (isWaitingForCorrectDirection && !isWaitingForReturn && headingDiff <= diffAngle) {
+      vibrationCtrl.startPattern(0x02);
+      Serial.println("First vibration! Now leave the target zone...");
+      
+      // Increment vibration counter
+      vibrationCountForCurrentTarget++;
+      Serial.print("Vibration count: ");
+      Serial.print(vibrationCountForCurrentTarget);
+      Serial.print("/");
+      Serial.println(VIBRATIONS_PER_TARGET);
+      
+      // Check if we've reached required vibrations
+      if (vibrationCountForCurrentTarget >= VIBRATIONS_PER_TARGET) {
+        // Target complete! Generate new target and restart timer
+        Serial.println("Target complete! Generating new target...");
+        generateNewHeadingShift();
+        isWaitingForCorrectDirection = false;
+        isWaitingForReturn = false;
+        hasLeftTarget = false;
         lastVibrationTime = millis();
         randomInterval = random(MIN_INTERVAL, MAX_INTERVAL + 1);
-        Serial.print("Next interval: ");
+        Serial.print("Next timer interval: ");
         Serial.println(randomInterval);
-        generateNewHeadingShift();
       } else {
-        // Enter waiting state for correct direction
-        isWaitingForCorrectDirection = true;
-        Serial.println("Waiting for correct direction...");
+        // Need more vibrations - enter leave-and-return mode (no timer)
+        isWaitingForCorrectDirection = false;
+        isWaitingForReturn = true;
+        hasLeftTarget = false;
+        Serial.print("Must leave target by ");
+        Serial.print(LEAVE_ANGLE_THRESHOLD);
+        Serial.println(" degrees, then return.");
       }
     }
     
-    // Phase 2: Waiting for correct direction
-    if (isWaitingForCorrectDirection && headingDiff <= diffAngle) {
+    // STATE 3: Waiting for user to leave target zone
+    if (isWaitingForReturn && !hasLeftTarget) {
+      if (headingDiff > LEAVE_ANGLE_THRESHOLD) {
+        hasLeftTarget = true;
+        Serial.println("Left target zone! Now return to trigger next vibration...");
+      }
+    }
+    
+    // STATE 4: User has left, waiting for return (second vibration)
+    if (isWaitingForReturn && hasLeftTarget && headingDiff <= diffAngle) {
       vibrationCtrl.startPattern(0x02);
-      Serial.println("Correct direction found! Vibrate!");
+      Serial.println("Returned to target! Vibrate!");
       
-      // Reset everything
-      isWaitingForCorrectDirection = false;
-      lastVibrationTime = millis();
-      randomInterval = random(MIN_INTERVAL, MAX_INTERVAL + 1);
-      Serial.print("Next interval: ");
-      Serial.println(randomInterval);
-      generateNewHeadingShift();
+      // Increment vibration counter
+      vibrationCountForCurrentTarget++;
+      Serial.print("Vibration count: ");
+      Serial.print(vibrationCountForCurrentTarget);
+      Serial.print("/");
+      Serial.println(VIBRATIONS_PER_TARGET);
+      
+      // Check if we've reached required vibrations
+      if (vibrationCountForCurrentTarget >= VIBRATIONS_PER_TARGET) {
+        // Target complete! Generate new target and restart timer
+        Serial.println("Target complete! Generating new target...");
+        generateNewHeadingShift();
+        isWaitingForCorrectDirection = false;
+        isWaitingForReturn = false;
+        hasLeftTarget = false;
+        lastVibrationTime = millis();
+        randomInterval = random(MIN_INTERVAL, MAX_INTERVAL + 1);
+        Serial.print("Next timer interval: ");
+        Serial.println(randomInterval);
+      } else {
+        // Need more vibrations - reset leave state
+        hasLeftTarget = false;
+        Serial.println("Need more vibrations - leave and return again!");
+      }
     }
   } else {
     // Timer disabled mode: always vibrate when correct
@@ -447,17 +495,52 @@ void updateTargetTower() {
   towerHeading = (360 + int(northHeading) + angleToTower) % 360;
 }
 
-// Generate new heading shift amount with chance of wrong direction
+// Generate new heading shift amount
+// First target: fully random direction (0-360°)
+// Subsequent targets: offset within headingShiftRange (±150°), ensuring MIN_ANGLE_DIFFERENCE from previous
 void generateNewHeadingShift() {
-  if (random(0, 100) < PROB_WRONG_DIRECTION) {
-    // Wrong direction: offset by 120°-180° (nearly opposite)
-    int wrongOffset = random(WRONG_OFFSET_MIN, WRONG_OFFSET_MAX + 1);
-    headingShiftAmount = (random(0, 2) == 0) ? wrongOffset : -wrongOffset;
-    Serial.print("WRONG direction offset: ");
+  // Save previous shift for comparison
+  previousHeadingShift = headingShiftAmount;
+  
+  if (isFirstTarget) {
+    // First target after calibration: completely random direction
+    headingShiftAmount = random(0, 360);
+    isFirstTarget = false;
+    Serial.print("FIRST TARGET (random 0-360): ");
   } else {
-    // Normal offset within range
-    headingShiftAmount = random(-headingShiftRange, headingShiftRange + 1);
-    Serial.print("Normal offset: ");
+    // Normal offset within range, but ensure minimum difference from previous
+    int attempts = 0;
+    const int maxAttempts = 50;  // Prevent infinite loop
+    float newShift;
+    
+    do {
+      newShift = random(-headingShiftRange, headingShiftRange + 1);
+      attempts++;
+      
+      // Calculate angular difference (handle wrap-around)
+      float diff = abs(newShift - previousHeadingShift);
+      if (diff > 180) diff = 360 - diff;
+      
+      // Accept if difference is large enough or we've tried too many times
+      if (diff >= MIN_ANGLE_DIFFERENCE || attempts >= maxAttempts) {
+        break;
+      }
+    } while (true);
+    
+    headingShiftAmount = newShift;
+    
+    if (attempts >= maxAttempts) {
+      Serial.print("Normal offset (max attempts reached): ");
+    } else {
+      Serial.print("Normal offset (diff=");
+      float finalDiff = abs(headingShiftAmount - previousHeadingShift);
+      if (finalDiff > 180) finalDiff = 360 - finalDiff;
+      Serial.print(finalDiff);
+      Serial.print("): ");
+    }
   }
   Serial.println(headingShiftAmount);
+  
+  // Reset vibration counter for new target
+  vibrationCountForCurrentTarget = 0;
 }

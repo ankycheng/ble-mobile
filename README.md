@@ -72,9 +72,10 @@ The Arduino firmware implements a **non-deterministic navigation system** - tran
 
 | Parameter | Value | Description |
 |-----------|-------|-------------|
-| Normal Offset | ±45° | Random offset from true direction |
-| Wrong Direction | 40% chance | Points 120°-180° away from target |
-| Regeneration | Per vibration | New offset after each trigger |
+| First Target | 0°-360° | Completely random direction |
+| Subsequent Targets | ±150° | Random offset from true direction |
+| Min Angle Difference | 60° | New target must differ from previous by at least this |
+| Vibrations Per Target | 2 | Must find same direction twice before new target |
 
 #### Vibration Trigger Flow
 
@@ -82,44 +83,45 @@ The Arduino firmware implements a **non-deterministic navigation system** - tran
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                         WANDER MODE LOOP                                │
 └─────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-                    ┌───────────────────────────────┐
-                    │   Wait Random 10-30 seconds   │◄─────────────────┐
-                    └───────────────────────────────┘                  │
-                                    │                                  │
-                                    ▼ Timer fires                      │
-                    ┌───────────────────────────────┐                  │
-                    │   Generate Direction Offset   │                  │
-                    │   • 60%: Normal (±45°)        │                  │
-                    │   • 40%: Wrong (120°-180°)    │                  │
-                    └───────────────────────────────┘                  │
-                                    │                                  │
-                                    ▼                                  │
-                    ┌───────────────────────────────┐                  │
-                    │   PHASE 1: Roll 30% chance    │                  │
-                    └───────────────────────────────┘                  │
-                           │                │                          │
-                      SUCCESS            FAILED                        │
-                           │                │                          │
-                           ▼                ▼                          │
-              ┌─────────────────┐   ┌───────────────────────┐          │
-              │    VIBRATE!     │   │  PHASE 2: Wait for    │          │
-              │   (immediate)   │   │  user to face offset  │          │
-              └─────────────────┘   │  direction (±15°)     │          │
-                           │        └───────────────────────┘          │
-                           │                │                          │
-                           │                ▼ User faces direction     │
-                           │        ┌───────────────────────┐          │
-                           │        │      VIBRATE!         │          │
-                           │        └───────────────────────┘          │
-                           │                │                          │
-                           └────────┬───────┘                          │
-                                    │                                  │
-                                    ▼                                  │
-                    ┌───────────────────────────────┐                  │
-                    │  Reset: New offset + interval │──────────────────┘
-                    └───────────────────────────────┘
+                                   │
+                                   ▼
+                   ┌───────────────────────────────┐
+                   │   Wait Random 10-30 seconds   │◄─────────────────┐
+                   └───────────────────────────────┘                  │
+                                   │                                  │
+                                   ▼ Timer fires                      │
+                   ┌───────────────────────────────┐                  │
+                   │   Wait for user to face       │                  │
+                   │   target direction (±15°)     │                  │
+                   └───────────────────────────────┘                  │
+                                   │                                  │
+                                   ▼ User faces direction             │
+                   ┌───────────────────────────────┐                  │
+                   │      VIBRATE! (#1)            │                  │
+                   └───────────────────────────────┘                  │
+                                   │                                  │
+                                   ▼                                  │
+                   ┌───────────────────────────────┐                  │
+                   │   Wait for user to LEAVE      │                  │
+                   │   target zone (>60°)          │  No timer wait   │
+                   └───────────────────────────────┘                  │
+                                   │                                  │
+                                   ▼ User leaves zone                 │
+                   ┌───────────────────────────────┐                  │
+                   │   Wait for user to RETURN     │                  │
+                   │   to target direction (±15°)  │                  │
+                   └───────────────────────────────┘                  │
+                                   │                                  │
+                                   ▼ User returns                     │
+                   ┌───────────────────────────────┐                  │
+                   │      VIBRATE! (#2)            │                  │
+                   └───────────────────────────────┘                  │
+                                   │                                  │
+                                   ▼                                  │
+                   ┌───────────────────────────────┐                  │
+                   │   Generate NEW target offset  │                  │
+                   │   (differs by ≥60° from prev) │──────────────────┘
+                   └───────────────────────────────┘
 ```
 
 #### Vibration Patterns
@@ -133,12 +135,20 @@ The Arduino firmware implements a **non-deterministic navigation system** - tran
 #### Configuration Constants
 
 ```cpp
-float diffAngle = 15.0;              // Angle tolerance
-float headingShiftRange = 45.0;      // Normal offset range
-const int PROB_WRONG_DIRECTION = 40; // % wrong direction
-const int PROB_UNCONDITIONAL = 30;   // % unconditional vibrate
-const unsigned long MIN_INTERVAL = 10000;  // 10 sec
-const unsigned long MAX_INTERVAL = 30000;  // 30 sec
+// Direction detection
+float diffAngle = 15.0;                    // Angle tolerance for "correct" direction
+
+// Offset generation
+float headingShiftRange = 150.0;           // Normal offset range (±150°)
+float MIN_ANGLE_DIFFERENCE = 60.0;         // New target must differ from previous
+
+// Target persistence
+const int VIBRATIONS_PER_TARGET = 2;       // Vibrations needed before new target
+float LEAVE_ANGLE_THRESHOLD = 60.0;        // Must leave by this much before return
+
+// Timer
+const unsigned long MIN_INTERVAL = 10000;  // 10 sec min between target cycles
+const unsigned long MAX_INTERVAL = 30000;  // 30 sec max between target cycles
 ```
 
 ## Usage & Development
