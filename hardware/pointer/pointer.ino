@@ -265,14 +265,28 @@ void setup() {
   microsPerReading = 1000000 / sensorRate;
   microsPrevious = micros();
 
+  // Non-blocking LED blink variables for calibration waiting
+  unsigned long ledPreviousMillis = 0;
+  bool ledState = false;
+  
   while (!isCalibrated) {
     BLE.poll();
     updateIMU();
-    // Keep built-in LED flashing
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(50);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(50);
+    
+    // Non-blocking LED blink based on Bluetooth connection state
+    unsigned long currentMillis = millis();
+    BLEDevice central = BLE.central();
+    
+    // Set blink interval based on connection state
+    // Connected but not calibrated: slow blink (500ms)
+    // Not connected: fast blink (50ms)
+    unsigned long blinkInterval = (central && central.connected()) ? 500 : 50;
+    
+    if (currentMillis - ledPreviousMillis >= blinkInterval) {
+      ledPreviousMillis = currentMillis;
+      ledState = !ledState;
+      digitalWrite(LED_BUILTIN, ledState ? HIGH : LOW);
+    }
 
     if (calibrationCharacteristic.written()) {
       digitalWrite(LED_BUILTIN, HIGH);
