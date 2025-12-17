@@ -217,6 +217,9 @@ function drawCompass(x, y, radius) {
 window.CompassState = CompassState;
 
 // Ref: https://www.sunearthtools.com/tools/distance.php
+// Export for use by other modules
+window.calculateAngleToTower = calculateAngleToTower;
+
 function calculateAngleToTower(lat1, lon1, lat2, lon2) {
   const φ1 = (lat1 * Math.PI) / 180;
   const φ2 = (lat2 * Math.PI) / 180;

@@ -20,6 +20,11 @@ int towerAngle = 0;
 float northHeading = 0.0;
 float headingDiff = 0.0;
 bool isCalibrated = false;
+
+// LED blink timing for "waiting for calibration" state in loop
+unsigned long loopLedPreviousMillis = 0;
+bool loopLedState = false;
+
 float gyroShiftX = 0.0;
 float gyroShiftY = 0.0;
 float gyroShiftZ = 0.0;
@@ -35,7 +40,7 @@ float diffAngle = 15.0;
 // Instead of pointing exactly at target, we add a random offset
 // This makes the "correct" direction drift, creating a meandering path
 bool isHeadingShiftEnabled = true;
-float headingShiftRange = 150.0;     // Normal offset range: -150° to +150°
+float headingShiftRange = 80.0;     // Normal offset range: -80° to +80°
 float headingShiftAmount = 0.0;     // Current offset, regenerated after each vibration
 
 // Timer control variables
@@ -43,8 +48,8 @@ float headingShiftAmount = 0.0;     // Current offset, regenerated after each vi
 bool isTimerEnabled = true;
 unsigned long lastVibrationTime = 0;
 unsigned long randomInterval = 0;
-const unsigned long MIN_INTERVAL = 10000;   // Minimum interval between vibration checks (ms)
-const unsigned long MAX_INTERVAL = 30000;   // Maximum interval between vibration checks (ms)
+const unsigned long MIN_INTERVAL = 5000;   // Minimum interval between vibration checks (ms)
+const unsigned long MAX_INTERVAL = 15000;   // Maximum interval between vibration checks (ms)
 
 // State tracking for "waiting for correct direction" mode
 bool isWaitingForCorrectDirection = false;
@@ -58,11 +63,11 @@ bool isFirstTarget = true;                    // First target is fully random (0
 // ===== Leave-and-return detection =====
 // After first vibration, user must leave target zone before second vibration can trigger
 bool hasLeftTarget = false;                   // Has user left the target zone after first vibration?
-float LEAVE_ANGLE_THRESHOLD = 60.0;           // Must turn away this many degrees to count as "left"
+float LEAVE_ANGLE_THRESHOLD = 30.0;           // Must turn away this many degrees to count as "left"
 bool isWaitingForReturn = false;              // State: waiting for user to return after leaving
 
 // ===== New target generation settings =====
-float MIN_ANGLE_DIFFERENCE = 60.0;            // New target must differ from old by at least this much
+float MIN_ANGLE_DIFFERENCE = 30.0;            // New target must differ from old by at least this much
 float previousHeadingShift = 0.0;             // Store previous shift for comparison
 
 // Pattern definitions
@@ -71,7 +76,7 @@ float previousHeadingShift = 0.0;             // Store previous shift for compar
 #define PATTERN_CALIBRATION 1
 #define PATTERN_START 0x01
 #define PATTERN_WANDER 0x02
-#define PATTERN_NEAR 0x03
+#define PATTERN_RESTART_SESSION 0x03
 
 class PatternController {
 private:
@@ -120,7 +125,7 @@ public:
           maxCount = 2;  // Double vibration
           interval = SHORT_DURATION;
           break;
-        case PATTERN_NEAR:
+        case PATTERN_RESTART_SESSION:
           maxCount = 1;  // Single long vibration
           interval = LONG_DURATION;
           break;
@@ -208,6 +213,7 @@ BLECharacteristic imuCharacteristic("19B10011-E8F2-537E-4F6C-D104768A1214", BLER
 BLEIntCharacteristic calibrationCharacteristic("49c29251-5fe3-4832-83dd-e736b673b0bf", BLERead | BLEWrite);
 BLEByteCharacteristic distanceCharacteristic("49c29252-5fe3-4832-83dd-e736b673b0bf", BLERead | BLEWrite);
 BLEByteCharacteristic resetCharacteristic("49c29254-5fe3-4832-83dd-e736b673b0bf", BLERead | BLEWrite);
+BLEIntCharacteristic restartSessionCharacteristic("49c29255-5fe3-4832-83dd-e736b673b0bf", BLERead | BLEWrite);
 
 void setup() {
   Serial.begin(9600);
@@ -244,10 +250,12 @@ void setup() {
   imuService.addCharacteristic(calibrationCharacteristic);
   imuService.addCharacteristic(distanceCharacteristic);
   imuService.addCharacteristic(resetCharacteristic);
+  imuService.addCharacteristic(restartSessionCharacteristic);
 
   calibrationCharacteristic.writeValue(0);
   distanceCharacteristic.writeValue(0);
   resetCharacteristic.writeValue(0);
+  restartSessionCharacteristic.writeValue(0);
 
   // Add service
   BLE.addService(imuService);
@@ -289,30 +297,7 @@ void setup() {
     }
 
     if (calibrationCharacteristic.written()) {
-      digitalWrite(LED_BUILTIN, HIGH);
-      delay(50);
-      for (int i = 0; i < sampleNum; i++) {
-        gyroShiftX += myIMU.readFloatGyroX();
-        gyroShiftY += myIMU.readFloatGyroY();
-        gyroShiftZ += myIMU.readFloatGyroZ();
-        delay(10);
-      }
-      gyroShiftX /= sampleNum;
-      gyroShiftY /= sampleNum;
-      gyroShiftZ /= sampleNum;
-
-      // Indication after calibration is complete:
-      // 1. Quick flash of built-in LED
-      for (int i = 0; i < 5; i++) {
-        digitalWrite(LED_BUILTIN, HIGH);
-        delay(100);
-        digitalWrite(LED_BUILTIN, LOW);
-        delay(100);
-      }
-
-      // 2. Start vibration for calibration completion
-      calibrateCtrl.startPattern(PATTERN_CALIBRATION);
-
+      performGyroCalibration();
       updateTargetTower();
     }
   }
@@ -348,15 +333,73 @@ void loop() {
   vibrationCtrl.update();
   calibrateCtrl.update();
 
-  // update target destination
+  // Calibrate: update target direction (align with true north)
+  // Also resets wander mode states for fresh start after restart session
   if (calibrationCharacteristic.written()) {
+    // If coming from restart session, do full gyro calibration
+    if (!isCalibrated) {
+      performGyroCalibration();
+    }
+    
     updateTargetTower();
+    
+    // Reset wander mode states for fresh session
     randomInterval = 0;
+    lastVibrationTime = millis();
+    isWaitingForCorrectDirection = false;
+    isWaitingForReturn = false;
+    hasLeftTarget = false;
+    vibrationCountForCurrentTarget = 0;
+    generateNewHeadingShift();
+
+    Serial.println("Calibration complete - session started");
+  }
+  
+  // Restart Session: go back to "waiting for calibration" state
+  if (restartSessionCharacteristic.written()) {
+    if (restartSessionCharacteristic.value() == 1) {
+      // Go back to waiting for calibration
+      isCalibrated = false;
+      
+      // Reset all wander mode states
+      randomInterval = 0;
+      lastVibrationTime = 0;
+      isWaitingForCorrectDirection = false;
+      isWaitingForReturn = false;
+      hasLeftTarget = false;
+      vibrationCountForCurrentTarget = 0;
+      isFirstTarget = true;
+      
+      // Vibration feedback to indicate session reset
+      vibrationCtrl.startPattern(PATTERN_RESTART_SESSION);
+      Serial.println("Session reset - waiting for calibration");
+    }
   }
 
   updateIMU();
 
-  // LED indicator: always shows direction status (independent of vibration)
+  // If not calibrated, show slow LED blink and skip wander logic
+  if (!isCalibrated) {
+    unsigned long currentMillis = millis();
+    BLEDevice central = BLE.central();
+    
+    // Slow blink (500ms) when connected, fast blink (50ms) when not
+    unsigned long blinkInterval = (central && central.connected()) ? 500 : 50;
+    
+    if (currentMillis - loopLedPreviousMillis >= blinkInterval) {
+      loopLedPreviousMillis = currentMillis;
+      loopLedState = !loopLedState;
+      digitalWrite(LED_BUILTIN, loopLedState ? HIGH : LOW);
+    }
+    
+    // Skip all wander mode logic, just feed watchdog and return
+    NRF_WDT->RR[0] = WDT_RR_RR_Reload;
+    return;
+  }
+
+  // ===== Below only runs when calibrated =====
+  
+  // LED indicator: shows direction status (independent of vibration)
   // LED ON (LOW) = facing correct direction, LED OFF (HIGH) = wrong direction
   if (headingDiff <= diffAngle) {
     digitalWrite(LED_BUILTIN, LOW);   // LED ON when correct
@@ -499,6 +542,42 @@ void updateIMU() {
 
     microsPrevious = microsNow;
   }
+}
+
+// Perform gyro drift calibration by sampling and calculating average shift
+void performGyroCalibration() {
+  Serial.println("Gyro calibration starting...");
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(50);
+  
+  // Reset gyro shift values before recalculating
+  gyroShiftX = 0.0;
+  gyroShiftY = 0.0;
+  gyroShiftZ = 0.0;
+  
+  // Sample gyro to calculate drift compensation
+  for (int i = 0; i < sampleNum; i++) {
+    gyroShiftX += myIMU.readFloatGyroX();
+    gyroShiftY += myIMU.readFloatGyroY();
+    gyroShiftZ += myIMU.readFloatGyroZ();
+    delay(10);
+    NRF_WDT->RR[0] = WDT_RR_RR_Reload;
+  }
+  gyroShiftX /= sampleNum;
+  gyroShiftY /= sampleNum;
+  gyroShiftZ /= sampleNum;
+  
+  // Quick flash of built-in LED to indicate calibration complete
+  for (int i = 0; i < 5; i++) {
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(100);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(100);
+  }
+  
+  // Vibration feedback for calibration completion
+  calibrateCtrl.startPattern(PATTERN_CALIBRATION);
+  Serial.println("Gyro calibration complete");
 }
 
 void updateTargetTower() {

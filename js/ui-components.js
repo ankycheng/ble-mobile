@@ -4,6 +4,7 @@ const UIState = {
     devMode: null,
     connect: null,
     reset: null,
+    restartSession: null,
     calibrate: null,
     findTower: null,
     switchTowerList: null,
@@ -50,6 +51,7 @@ function initializeButtons() {
   UIState.buttons.connect = document.getElementById('connect-button');
   UIState.buttons.reset = document.getElementById('reset-button');
   UIState.buttons.calibrate = document.getElementById('calibrate-button');
+  UIState.buttons.restartSession = document.getElementById('restart-session-button');
   UIState.buttons.findTower = document.getElementById('find-tower-button');
   UIState.buttons.switchTowerList = document.getElementById('switch-tower-button');
   UIState.buttons.compass = document.getElementById('compass-button');
@@ -68,6 +70,9 @@ function initializeButtons() {
   }
   if (UIState.handlers.calibrate && UIState.buttons.calibrate) {
     UIState.buttons.calibrate.removeEventListener('click', UIState.handlers.calibrate);
+  }
+  if (UIState.handlers.restartSession && UIState.buttons.restartSession) {
+    UIState.buttons.restartSession.removeEventListener('click', UIState.handlers.restartSession);
   }
   if (UIState.handlers.findTower && UIState.buttons.findTower) {
     UIState.buttons.findTower.removeEventListener('click', UIState.handlers.findTower);
@@ -105,6 +110,14 @@ function initializeButtons() {
     }
   };
   UIState.buttons.reset.addEventListener('click', UIState.handlers.reset);
+
+  // Restart Session Button
+  UIState.handlers.restartSession = () => {
+    if (window.restartSession) {
+      window.restartSession();
+    }
+  };
+  UIState.buttons.restartSession.addEventListener('click', UIState.handlers.restartSession);
 
   // Calibrate Button
   UIState.handlers.calibrate = () => {

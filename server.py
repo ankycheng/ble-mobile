@@ -78,6 +78,9 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
 print(f"Checking for processes on port {PORT}...")
 kill_process_on_port(PORT)
 
+# Allow reuse of address in TIME_WAIT state
+socketserver.TCPServer.allow_reuse_address = True
+
 with socketserver.TCPServer(("", PORT), CustomHandler) as httpd:
     print(f"Serving at http://localhost:{PORT}")
     print(f"Server started at: {build_timestamp}")
